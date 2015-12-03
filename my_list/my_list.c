@@ -19,9 +19,25 @@ struct MyList_t {
 };
 
 int MyListGetSize(const MyList myList) {
+	if (myList == NULL) {
+		return -1;
+	}
 	int length = 0;
-	for (MyList iterator = myList; iterator != NULL; ++iterator) {
+	for (MyListNode iterator = myList->begin;
+			iterator != NULL;
+			iterator = iterator->next) {
 		++length;
 	}
 	return length;
+}
+
+MyListElement myListGetNext(MyList myList) {
+	if (myList == NULL || myList->iterator == NULL) {
+		return NULL;
+	}
+	myList->iterator = myList->iterator->next;
+	if (myList->iterator == NULL) {
+		return NULL;
+	}
+	return myList->iterator->value;
 }
