@@ -72,6 +72,8 @@ MyListElement MyListGetFirst(MyList myList);
  */
 MyListElement myListGetNext(MyList myList);
 
+MyListResult myListInsertFront(MyList myList, MyListElement element);
+
 /**
  * Adds a new element to the list, the new element will be place right before
  * the current element
@@ -79,6 +81,7 @@ MyListElement myListGetNext(MyList myList);
  * @param element
  * @return
  * LIST_NULL_ARGUMENT if a NULL was sent as
+ * MY_LIST_INVALID_CURRENT if list is not empty and iterator is not set
  */
 MyListResult myListInsertBeforeCurrent(MyList myList, MyListElement element);
 
