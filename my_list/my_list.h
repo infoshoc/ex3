@@ -80,6 +80,8 @@ MyListElement myListGetNext(MyList myList);
  */
 MyListResult myListInsertBeforeCurrent(MyList myList, MyListElement element);
 
+MyListResult myListRemoveCurrent(MyList myList);
+
 MyListResult myListClear(MyList mylist);
 
 void myListDestroy(MyList Mylist);
