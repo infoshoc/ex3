@@ -84,7 +84,12 @@ MyListResult myListClear(MyList mylist);
 
 void myListDestroy(MyList Mylist);
 
-
-
+/**
+ * Macro for iterating over a list.
+ */
+#define MY_LIST_FOREACH(type,iterator,list) \
+	for(type iterator = listGetFirst(list) ; \
+		iterator ;\
+		iterator = listGetNext(list))
 
 #endif /* MY_LIST_H_ */
