@@ -15,6 +15,8 @@ struct MyListNode_t{
 };
 
 struct MyList_t {
+	CopyMyListElement copyElement;
+	FreeMyListElement freeElement;
 	MyListNode begin, iterator;
 };
 
@@ -40,4 +42,29 @@ MyListElement myListGetNext(MyList myList) {
 		return NULL;
 	}
 	return myList->iterator->value;
+}
+
+MyListResult myListRemoveCurrent(MyList myList) {
+	if (myList == NULL) {
+		return MY_LIST_NULL_ARGUMENT;
+	}
+	if (myList->iterator == NULL) {
+		return MY_LIST_INVALID_CURRENT;
+	}
+
+	//deallocate current value
+	myList->freeElement(myList->iterator->value);
+	MyListNode nextNode = myList->iterator->next;
+	if (nextNode == NULL) {
+		//deallocate current Node
+		free(myList->iterator);
+	} else {
+		//copy next node inside current
+		myList->iterator->next = nextNode->next;
+		myList->iterator->value = nextNode->value;
+		//deallocate next node
+		free(nextNode);
+	}
+	myList->iterator = NULL;
+	return MY_LIST_SUCCESS;
 }

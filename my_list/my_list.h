@@ -13,8 +13,10 @@ typedef struct MyList_t *MyList;
 
 /** Type used for returning error codes from list functions */
 typedef enum MyListResult_t {
-	LIST_SUCCESS,
-	LIST_OUT_OF_MEMORY
+	MY_LIST_SUCCESS,
+	MY_LIST_NULL_ARGUMENT,
+	MY_LIST_OUT_OF_MEMORY,
+	MY_LIST_INVALID_CURRENT
 } MyListResult;
 
 /** Element data type for list container */
@@ -80,10 +82,31 @@ MyListElement myListGetNext(MyList myList);
  */
 MyListResult myListInsertBeforeCurrent(MyList myList, MyListElement element);
 
+/**
+ * Removes the currently pointed element of the list using the stored freeing
+ * function. Resets iterator
+ *
+ * @param The list for which the current element will be removed
+ * @return
+ * LIST_NULL_ARGUMENT if list is NULL
+ * LIST_INVALID_CURRENT if the current pointer of the list is in invalid state
+ * LIST_SUCCESS the current element was removed successfully
+ */
 MyListResult myListRemoveCurrent(MyList myList);
 
+/**
+ * Removes all elements from target list. The elements are deallocated using
+ * the stored freeing function
+ *
+ * @param mylist Target list to remove all element from
+ * @return
+ */
 MyListResult myListClear(MyList mylist);
 
+/**
+ * Deallocates an existing list. Clears all elements by using the stored free function
+ * @param Mylist Target list to be deallocated. If list is NULL nothing will be done
+ */
 void myListDestroy(MyList Mylist);
 
 /**
