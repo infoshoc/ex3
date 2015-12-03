@@ -36,7 +36,7 @@ bool testMySetExample() {
   char* goodDay = "Good day!";
 
   MySet set = mySetCreate(copyString, freeString, compareStrings);
-  ASSERT_TEST(mySet != NULL);
+  ASSERT_TEST(set != NULL);
   ASSERT_TEST(mySetGetSize(set) == 0);
   ASSERT_TEST(mySetIsIn(set, hello) == false);
   ASSERT_TEST(mySetAdd(set, hello) == MY_SET_SUCCESS);
