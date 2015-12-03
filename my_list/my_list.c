@@ -33,6 +33,18 @@ int MyListGetSize(const MyList myList) {
 	return length;
 }
 
+bool myListIsIn(const MyList myList, const MyListElement element, int(*comparator)(MyListElement, MyListElement)) {
+	if (myList == NULL) {
+		return false;
+	}
+	for (MyListNode iterator = myList->begin; iterator != NULL; iterator=iterator->next) {
+		if (comparator(element, iterator->value)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 MyListElement myListGetNext(MyList myList) {
 	if (myList == NULL || myList->iterator == NULL) {
 		return NULL;

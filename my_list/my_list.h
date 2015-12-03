@@ -8,6 +8,8 @@
 #ifndef MY_LIST_H_
 #define MY_LIST_H_
 
+#include <stdbool.h>
+
 /** Type for defining the list */
 typedef struct MyList_t *MyList;
 
@@ -49,7 +51,9 @@ MyList MyListCreate(CopyMyListElement copyElement, FreeMyListElement freeElement
  * 	-1 - if a NULL pointer was sent
  * 	OTherwise the number of elements in the list
  */
-int MyListGetSize(MyList myList);
+int myListGetSize(const MyList myList);
+
+bool myListIsIn(const MyList myList, const MyListElement element);
 
 /**
  * Sets the internal iterator to the first element and retrieves it.
@@ -59,7 +63,7 @@ int MyListGetSize(MyList myList);
  * 	NULL if a NULL pointer was sent or the list is empty
  * 	The first element of the list otherwise
  */
-MyListElement MyListGetFirst(MyList myList);
+MyListElement myListGetFirst(MyList myList);
 
 /**
  * Advances the list's iterator to the next element and return it
