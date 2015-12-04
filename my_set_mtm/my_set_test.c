@@ -246,8 +246,8 @@ static bool testMySetAdd() {
 	}
 
 	ASSERT_TEST(mySetAdd(NULL, values[0]) == MY_SET_NULL_ARGUMENT);
-	//TODO if element is NULL
 	MySet set = mySetCreate(copyInt, freeInt, compareInt);
+	ASSERT_TEST(mySetAdd(set, NULL) == MY_SET_NULL_ARGUMENT);
 	ASSERT_TEST(set != NULL);
 	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetGetSize(set) == 1);

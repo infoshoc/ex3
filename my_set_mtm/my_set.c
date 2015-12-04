@@ -50,7 +50,7 @@ void mySetDestroy(MySet set) {
 }
 
 bool mySetIsIn(MySet set, MySetElement element) {
-	if (set == NULL) {
+	if (set == NULL || element == NULL) {
 		return false;
 	}
 	//TODO if element == NULL
@@ -76,8 +76,7 @@ MySetElement mySetGetNext(MySet set) {
 }
 
 MySetResult mySetAdd(MySet set, MySetElement element) {
-	// TODO what if element == NULL
-	if (set == NULL) {
+	if (set == NULL || element == NULL) {
 		return MY_SET_NULL_ARGUMENT;
 	}
 	if (mySetIsIn(set, element)) {
@@ -112,7 +111,6 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 }
 
 MySetElement mySetExtract(MySet set, MySetElement element) {
-	// TODO if element == NULL?
 	if (set == NULL || !mySetIsIn(set, element)) {
 		return NULL;
 	}
@@ -163,6 +161,5 @@ MySet mySetFilter(MySet set, logicalCondition condition) {
 			}
 		}
 	}
-
 	return result;
 }
