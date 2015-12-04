@@ -79,8 +79,61 @@ bool testMySetExample() {
   return true;
 }
 
+#define MY_SET_TEST_ALLOCATION(type, variable, error) \
+	do { \
+		if(NULL == (variable = (type*)malloc(sizeof(type)))) { \
+			return error; \
+		} \
+	}while(false);
+
+#define INT(e) (*(int*)(e))
+
+static MySetElement copyInt(const MySetElement element) {
+	if (!element) {
+		return NULL;
+	}
+	MySetElement copy;
+	MY_SET_TEST_ALLOCATION(int, copy, NULL);
+	INT(copy) = INT(element);
+	return copy;
+}
+
+static void freeInt(MySetElement element) {
+	free(element);
+}
+
+static int compareInt(const MySetElement a, const MySetElement b) {
+	return INT(a) - INT(b);
+}
+
+static bool testMySetCopy() {
+	ASSERT_TEST(mySetCopy(NULL) == NULL);
+	MySet set = mySetCreate(copyInt, freeInt, compareInt);
+	ASSERT_TEST(set != NULL);
+	MySet copy = mySetCopy(set);
+	ASSERT_TEST(copy != NULL);
+	ASSERT_TEST(mySetGetSize(copy) == 0);
+	mySetDestroy(set);
+	int *one;
+	MY_SET_TEST_ALLOCATION(int, one, (mySetDestroy(copy), false));
+	*one = 1;
+	ASSERT_TRUE(mySetAdd(copy, one) == MY_SET_SUCCESS);
+	ASSERT_TRUE(mySetGetFirst(copy) != NULL);
+	set = copy;
+	copy = mySetCopy(set);
+	mySetDestroy(set);
+	ASSERT_TRUE(mySetAdd(copy, one) == MY_SET_ITEM_ALREADY_EXISTS);
+	//TODO internal iterator check
+	mySetDestroy(copy);
+
+	return true;
+}
+
+
+
 int main() {
 	RUN_TEST(testMySetExample);
+	RUN_TEST(testMySetCopy);
 	return 0;
 }
 
