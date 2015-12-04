@@ -53,7 +53,6 @@ bool mySetIsIn(MySet set, MySetElement element) {
 	if (set == NULL || element == NULL) {
 		return false;
 	}
-	//TODO if element == NULL
 	for (MySetNode iterator = set->head; iterator != NULL; iterator = iterator->next) {
 		if (set->compareElements(iterator->element, element) == 0) {
 			return true;
