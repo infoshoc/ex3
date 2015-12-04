@@ -117,12 +117,12 @@ static bool testMySetCopy() {
 	int *one;
 	MY_SET_TEST_ALLOCATION(int, one, (mySetDestroy(copy), false));
 	*one = 1;
-	ASSERT_TRUE(mySetAdd(copy, one) == MY_SET_SUCCESS);
-	ASSERT_TRUE(mySetGetFirst(copy) != NULL);
+	ASSERT_TEST(mySetAdd(copy, one) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetGetFirst(copy) != NULL);
 	set = copy;
 	copy = mySetCopy(set);
 	mySetDestroy(set);
-	ASSERT_TRUE(mySetAdd(copy, one) == MY_SET_ITEM_ALREADY_EXISTS);
+	ASSERT_TEST(mySetAdd(copy, one) == MY_SET_ITEM_ALREADY_EXISTS);
 	//TODO internal iterator check
 	mySetDestroy(copy);
 
