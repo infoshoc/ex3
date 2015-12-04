@@ -5,27 +5,27 @@
 typedef struct MySetNode_t {
 	MySetElement element;
 	struct MySetNode_t *next;
-} *MySetNode;
+} *MySetNode, MySetNode_t;
 
 
 
-struct MySet_t {
+typedef struct MySet_t {
 	copyMySetElements copyElement;
 	freeMySetElements freeElement;
 	compareMySetElements compareElements;
 	MySetNode head, iterator;
-};
+} MySet_t;
 
 #define MY_SET_ALLOCATION(type, variable, error) \
 	do { \
-		if(NULL == (variable = (type)malloc(sizeof(*variable)))) { \
+		if(NULL == (variable = (type*)malloc(sizeof(type)))) { \
 			return error; \
 		} \
 	}while(false);
 
 MySet mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, compareMySetElements compareElements) {
 	MySet set;
-	MY_SET_ALLOCATION(MySet, set, NULL);
+	MY_SET_ALLOCATION(MySet_t, set, NULL);
 
 	set->copyElement = copyElement;
 	set->freeElement = freeElement;
@@ -86,7 +86,7 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 
 	// Create new node
 	MySetNode node;
-	MY_SET_ALLOCATION(MySetNode, node, MY_SET_OUT_OF_MEMORY);
+	MY_SET_ALLOCATION(MySetNode_t, node, MY_SET_OUT_OF_MEMORY);
 	if (NULL == (node->element = set->copyElement(element))) {
 		free(node);
 		return MY_SET_OUT_OF_MEMORY;
