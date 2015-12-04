@@ -1,12 +1,13 @@
+#ifndef GRAPH_H_
+#define GRAPH_H_
+
 /*
  * graph.h
  *
- *  Created on: Dec 4, 2015
- *      Author: Infoshoc_2
+ * Header for generic graph ADT
+ *
  */
 
-#ifndef GRAPH_H_
-#define GRAPH_H_
 
 #include <stdbool.h>
 
@@ -30,14 +31,15 @@ typedef GraphVertex(*copyGraphVertex)(ConstGraphVertex);
 typedef int(*compareGraphVertex)(ConstGraphVertex, ConstGraphVertex);
 typedef void(*freeGraphVertex)(ConstGraphVertex);
 
-Graph GraphCreate(copyGraphVertex, compareGraphVertex, freeGraphVertex);
-void GraphDestroy(Graph);
-GraphResult GraphAddVertex(Graph, ConstGraphVertex);
-GraphResult GraphRemoveVertex(Graph, ConstGraphVertex);
-bool GraphIsVertexExists(Graph, ConstGraph, Vertex);
-GraphResult GraphAddDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
-GraphResult GraphRemoveDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
-bool GraphIsDirectedEdge(Graph,  ConstGraphVertex from, ConstGraphVertex to);
+Graph graphCreate(copyGraphVertex, compareGraphVertex, freeGraphVertex);
+void graphDestroy(Graph);
+GraphResult graphAddVertex(Graph, ConstGraphVertex);
+GraphResult graphRemoveVertex(Graph, ConstGraphVertex);
+bool graphIsVertexExists(Graph, ConstGraph, ConstGraphVertex);
+GraphResult graphAddDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
+GraphResult graphRemoveDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
+bool graphIsDirectedEdge(Graph,  ConstGraphVertex from, ConstGraphVertex to);
+GraphResult graphClear(Graph);
 
 #endif /* GRAPH_H_ */
 
