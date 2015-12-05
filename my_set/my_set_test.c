@@ -131,7 +131,7 @@ static bool testMySetCopy() {
 	mySetDestroy(set);
 	ASSERT_TEST(mySetGetSize(copy) == 1);
 	ASSERT_TEST(mySetAdd(copy, one) == MY_SET_ITEM_ALREADY_EXISTS);
-	//TODO internal iterator check
+	ASSERT_TEST(mySetGetCurrent(copy) == NULL);
 	freeInt(one);
 	mySetDestroy(copy);
 
