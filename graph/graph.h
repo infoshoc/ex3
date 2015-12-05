@@ -35,7 +35,7 @@ Graph graphCreate(copyGraphVertex, compareGraphVertex, freeGraphVertex);
 void graphDestroy(Graph);
 GraphResult graphAddVertex(Graph, ConstGraphVertex);
 GraphResult graphRemoveVertex(Graph, ConstGraphVertex);
-bool graphIsVertexExists(Graph, ConstGraph, ConstGraphVertex);
+bool graphIsVertexExists(ConstGraph, ConstGraphVertex);
 GraphResult graphAddDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
 GraphResult graphRemoveDirectedEdge(Graph, ConstGraphVertex from, ConstGraphVertex to);
 bool graphIsDirectedEdge(Graph,  ConstGraphVertex from, ConstGraphVertex to);
