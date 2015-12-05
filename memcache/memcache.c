@@ -4,16 +4,18 @@
  *  Created on: Nov 30, 2015
  *      Author: Infoshoc_2
  */
+
+#include <stdlib.h>
+#include <assert.h>
 #include "memcache.h"
 #include "cache.h"
 #include "graph.h"
 #include "map.h"
 #include "set.h"
-#include <stdlib.h>
 
 #define MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE (265)
 #define MEMCACHE_ALLOCATED_BLOCK_MODULO (65536)
-#define MEMCACHE_USER_NAME_LENGTH 8
+#define MEMCACHE_USER_NAME_LENGTH (8)
 
 typedef struct MemCache_t {
 	Cache freeBlocks;
@@ -58,6 +60,10 @@ static int memcacheBlockGetSize(MemCacheBlock block) {
 	//TODO
 }
 static MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
+	//TODO
+}
+/** Function returns owner of block (NOT COPY) */
+static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	//TODO
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
@@ -162,7 +168,7 @@ MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int
 	if (!memcacheIsUserNameLegal(username)) {
 		return MEMCACHE_ILLEGAL_USERNAME;
 	}
-	if (memcacheIsUserExists(username)) {
+	if (memcacheIsUserExists(memcache, username)) {
 		return MEMCACHE_USERNAME_ALREADY_USED;
 	}
 
@@ -175,8 +181,8 @@ MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int
 	MapResult mapPutResult = mapPut(memcache->userMemoryLimit, username, &memory_limit);
 	if (mapPutResult == MAP_OUT_OF_MEMORY) {
 		// consistency
-		GraphResult graphRemoveVertex = graphRemoveVertex(memcache->userRelations, username);
-		assert(graphRemoveVertex == GRAPH_SUCCESS);
+		GraphResult graphRemoveVertexResult = graphRemoveVertex(memcache->userRelations, username);
+		assert(graphRemoveVertexResult == GRAPH_SUCCESS);
 		return MEMCACHE_OUT_OF_MEMORY;
 	}
 	assert(mapPutResult == MAP_SUCCESS);
@@ -239,7 +245,9 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 		break;
 	}
 
-	if (memcacheBlockGetSize(ptr) > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
+	int blockSize = memcacheBlockGetSize(ptr);
+	memcacheUserIncreaseMemoryLimit(owner, blockSize);
+	if (blockSize > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
 		memcacheBlockFree(ptr);
 	} else {
 		assert(memcacheBlockGetSize(ptr) <= MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE);
@@ -249,6 +257,7 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 		}
 		assert(CACHE_SUCCESS == cachePushResult);
 	}
+
 	cacheExtractElementByKey(memcache->allocatedBlocks, ptr);
 
 	return MEMCACHE_SUCCESS;
@@ -273,18 +282,18 @@ MemCachResult memCacheReset(MemCache memcache) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
-	GraphResult graphClear = graphClear(memcache->userRelations);
-	MapResult mapClear = mapClear(memcache->userMemoryLimit);
-	CacheResult allocatedCacheClear = cacheClear(memcache->allocatedBlocks);
-	CacheResult freeCacheClear = cacheClear(memcache->freeBlocks);
-	SetResult allocatedSetClear = setClear(memcache->allAllocatedBlocks);
-	SetResult freeSetClear = setClear(memcache->allFreeBlocks);
-	assert(graphClear == GRAPH_SUCCESS &&
-			mapClear == MAP_SUCCESS &&
-			allocatedCacheClear == CACHE_SUCCESS &&
-			freeCacheClear == CACHE_SUCCESS &&
-			allocatedSetClear == SET_SUCCESS &&
-			freeSetClear == SET_SUCCESS);
+	GraphResult graphClearResult = graphClear(memcache->userRelations);
+	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
+	CacheResult allocatedCacheClearResult = cacheClear(memcache->allocatedBlocks);
+	CacheResult freeCacheClearResult = cacheClear(memcache->freeBlocks);
+	SetResult allocatedSetClearResult = setClear(memcache->allAllocatedBlocks);
+	SetResult freeSetClearResult = setClear(memcache->allFreeBlocks);
+	assert(graphClearResult == GRAPH_SUCCESS &&
+			mapClearResult == MAP_SUCCESS &&
+			allocatedCacheClearResult == CACHE_SUCCESS &&
+			freeCacheClearResult == CACHE_SUCCESS &&
+			allocatedSetClearResult == SET_SUCCESS &&
+			freeSetClearResult == SET_SUCCESS);
 
 	return MEMCACHE_SUCCESS;
 }
