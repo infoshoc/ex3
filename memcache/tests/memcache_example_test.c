@@ -289,6 +289,59 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_EQUAL(NULL, memCacheGetFirstFreeBlock(memcache));
 
 	memCacheDestroy(memcache);
+	return true;
+}
+
+static bool memCacheAllocatedBlockForeachTest() {
+	// NULL stable
+	ASSERT_NULL(memCacheGetFirstAllocatedBlock(NULL));
+	ASSERT_NULL(memCacheGetCurrentAllocatedBlock(NULL));
+	ASSERT_NULL(memCacheGetNextAllocatedBlock(NULL));
+
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+	// empty test
+	ASSERT_NULL(memCacheGetFirstAllocatedBlock(memcache));
+	ASSERT_NULL(memCacheGetCurrentAllocatedBlock(memcache));
+	ASSERT_NULL(memCacheGetNextAllocatedBlock(memcache));
+
+	// users
+	const char * const user = "oomph!!!";
+
+	// add 2 system
+	ASSERT_EQUAL(memCacheAddUser(memcache, user, 393354), MEMCACHE_SUCCESS);
+
+	// allocations
+	const int SIZE2ALLOCATE_LENGTH = 9;
+	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<16), (1<<16), (1<<16)};
+	void * blocks[SIZE2ALLOCATE_LENGTH];
+	int visitedTimes[SIZE2ALLOCATE_LENGTH] = {0};
+
+	for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
+		blocks[i] = memCacheAllocate(memcache, user, SIZE2ALLOCATE[i]);
+		ASSERT_NOT_NULL(blocks[i]);
+	}
+
+	int iterations = 0;
+	MEMCACHE_ALLOCATED_FOREACH(void*, block, memcache) {
+		++iterations;
+		for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
+			if (blocks[i] == block) {
+				++visitedTimes[i];
+			}
+		}
+	}
+
+	ASSERT_EQUAL(iterations, SIZE2ALLOCATE_LENGTH);
+	for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
+		ASSERT_EQUAL(visitedTimes[i], 1);
+	}
+
+	return true;
+}
+
+static bool memCacheFreeBlockForeachTest() {
+	// TODO write it
 }
 
 int main() {
@@ -296,6 +349,10 @@ int main() {
   RUN_TEST(memCacheDestroyTest);
   RUN_TEST(memCacheSetBlockModTest);
   RUN_TEST(memCacheUntrustTest);
+  RUN_TEST(memCacheAllocateTest);
+  RUN_TEST(memCacheAllocatedBlockForeachTest);
+  RUN_TEST(memCacheFreeBlockForeachTest);
+
   return 0;
 }
 
