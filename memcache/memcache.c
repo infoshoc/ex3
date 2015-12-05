@@ -8,6 +8,7 @@
 #include "cache.h"
 #include "graph.h"
 #include "map.h"
+#include "set.h"
 #include <stdlib.h>
 
 #define MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE (265)
@@ -19,6 +20,10 @@ typedef struct MemCache_t {
 	Cache allocatedBlocks;
 	Graph userRelations;
 	Map userMemoryLimit;
+
+	/* used for iteration */
+	Set allAllocatedBlocks;
+	Set allFreeBlocks;
 } MemCache_t;
 
 typedef enum MemCacheBlockMode {
@@ -76,6 +81,7 @@ static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
 static void memcacheLimitFree(MemCacheLimit limit) {
 	//TODO
 }
+static void memcacheDoNothing(MemCacheBlock){}
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	// TODO
 }
@@ -91,43 +97,59 @@ static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
 }
 
 MemCache memCacheCreate() {
-	MemCache memCache;
-	MEMCACHE_ALLOCATE(MemCache_t, memCache, NULL);
+	MemCache memcache;
+	MEMCACHE_ALLOCATE(MemCache_t, memcache, NULL);
 
-	memCache->freeBlocks = cacheCreate(
+	memcache->freeBlocks = cacheCreate(
 			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
 			memcacheBlockFree,
 			memcacheBlockCopy,
 			memcacheBlocksCompare,
 			memcacheAvailibleBlockComputeKey);
 
-	memCache->allocatedBlocks = cacheCreate(
+	memcache->allocatedBlocks = cacheCreate(
 			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
 			memcacheBlockFree,
 			memcacheBlockCopy,
 			memcacheBlocksCompare,
 			memcacheAllocatedBlockComputeKey);
 
-	memCache->userRelations = graphCreate(
+	memcache->userRelations = graphCreate(
 			memcacheUserCopy,
 			memcacheUsersCompare,
 			memcacheUserFree);
 
-	memCache->userMemoryLimit = mapCreate(
+	memcache->userMemoryLimit = mapCreate(
 			memcacheLimitCopy,
 			memcacheUserCopy,
 			memcacheLimitFree,
 			memcacheUserFree,
 			memcacheUsersCompare);
 
-	if (!memCache->freeBlocks ||
-			!memCache->allocatedBlocks ||
-			!memCache->userRelations) {
-		memCacheDestroy(memCache);
+	memcache->allAllocatedBlocks = setCreate(
+			memcacheBlockCopy,
+			// it is helpful set, we should not deallocate blocks while clear
+			memcacheDoNothing,
+			memcacheBlocksCompare
+			);
+
+	memcache->allFreeBlocks = setCreate(
+			memcacheBlockCopy,
+			// it is helpful set, we should not deallocate blocks while clear
+			memcacheDoNothing,
+			memcacheBlocksCompare
+			);
+
+	if (!memcache->freeBlocks ||
+			!memcache->allocatedBlocks ||
+			!memcache->userRelations ||
+			!memcache->allAllocatedBlocks ||
+			!memcache->allFreeBlocks) {
+		memCacheDestroy(memcache);
 		return NULL;
 	}
 
-	return memCache;
+	return memcache;
 }
 
 MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int memory_limit) {
@@ -232,28 +254,37 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 	return MEMCACHE_SUCCESS;
 }
 
+
 void* memCacheGetNextAllocatedBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return cacheGetNext(memcache->allocatedBlocks);
+	return setGetNext(memcache->allAllocatedBlocks);
 }
 
 void* memCacheGetNextFreeBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return cacheGetNext(memcache->freeBlocks);
+	return setGetNext(memcache->allFreeBlocks);
 }
 
 MemCachResult memCacheReset(MemCache memcache) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
-	graphClear(memcache->userRelations);
-	mapClear(memcache->userMemoryLimit);
-	cacheClear(memcache->allocatedBlocks);
-	cacheClear(memcache->freeBlocks);
+	GraphResult graphClear = graphClear(memcache->userRelations);
+	MapResult mapClear = mapClear(memcache->userMemoryLimit);
+	CacheResult allocatedCacheClear = cacheClear(memcache->allocatedBlocks);
+	CacheResult freeCacheClear = cacheClear(memcache->freeBlocks);
+	SetResult allocatedSetClear = setClear(memcache->allAllocatedBlocks);
+	SetResult freeSetClear = setClear(memcache->allFreeBlocks);
+	assert(graphClear == GRAPH_SUCCESS &&
+			mapClear == MAP_SUCCESS &&
+			allocatedCacheClear == CACHE_SUCCESS &&
+			freeCacheClear == CACHE_SUCCESS &&
+			allocatedSetClear == SET_SUCCESS &&
+			freeSetClear == SET_SUCCESS);
 
 	return MEMCACHE_SUCCESS;
 }
