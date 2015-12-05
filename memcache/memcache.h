@@ -231,4 +231,22 @@ void* memCacheGetCurrentFreeBlock(MemCache memcache);
  */
 MemCachResult memCacheReset(MemCache memcache);
 
+/*!
+* Macro for iterating over a allocated blocks.
+* Declares a new iterator for the loop.
+*/
+#define MEMCACHE_ALLOCATED_FOREACH(type,iterator,memcache) \
+	for(type iterator = memcacheGetFirstAllocatedBlock(memcache) ; \
+		iterator ;\
+		iterator = memcacheGetNextAllocatedBlock(memcache))
+
+/*!
+* Macro for iterating over a free blocks.
+* Declares a new iterator for the loop.
+*/
+#define MEMCACHE_ALLOCATED_FOREACH(type,iterator,memcache) \
+	for(type iterator = memcacheGetFirstFreeBlock(memcache) ; \
+		iterator ;\
+		iterator = memcacheGetNextFreeBlock(memcache))
+
 #endif /* MEMCACHE_H_ */
