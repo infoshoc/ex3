@@ -21,6 +21,11 @@ typedef struct MemCache_t {
 	Map userMemoryLimit;
 } MemCache_t;
 
+typedef enum MemCacheBlockMode {
+	USER = 'U', GROUP = 'G', ALL = 'A'
+} MemCacheBlockMode;
+
+typedef const MemCacheBlockMode ConstMemCacheBlockMode;
 typedef void *MemCacheBlock;
 typedef const void* const ConstMemCacheBlock;
 typedef char *MemCacheUser;
@@ -45,6 +50,9 @@ static int memcacheBlocksCompare(MemCacheBlock a, MemCacheBlock b) {
 	return (char*)a - (char*)b;
 }
 static int memcacheBlockGetSize(MemCacheBlock block) {
+	//TODO
+}
+static MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
 	//TODO
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
@@ -193,10 +201,20 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 	if (!cacheIsIn(memcache->allocatedBlocks, ptr)) {
 		return MEMCACHE_BLOCK_NOT_ALLOCATED;
 	}
-	ConstMemCacheUser ptrOwner = memcacheBlockGetOwner(ptr);
-	if (memcacheUsersCompare(ptrOwner, username) != 0 &&
-			graphIsDirectedEdge(memcache->userRelations, ptrOwner, username)) {
-		return MEMCACHE_PERMISSION_DENIED;
+	ConstMemCacheBlockMode mode = memcacheBlockGetMode(ptr);
+	ConstMemCacheUser owner = memcacheBlockGetOwner(ptr);
+	switch (mode) {
+	case USER:
+		if (0 != memcacheUsersCompare(username, owner)) {
+			return MEMCACHE_PERMISSION_DENIED;
+		}
+		break;
+	case GROUP:
+		if (0 != memcacheUsersCompare(username, owner) &&
+				!graphIsDirectedEdge(memcache->userRelations, owner, username)) {
+			return MEMCACHE_PERMISSION_DENIED;
+		}
+		break;
 	}
 
 	if (memcacheBlockGetSize(ptr) > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
@@ -228,7 +246,7 @@ void* memCacheGetNextFreeBlock(MemCache memcache) {
 	return cacheGetNext(memcache->freeBlocks);
 }
 
-MemCacheResult memCacheReset(MemCache memcache) {
+MemCachResult memCacheReset(MemCache memcache) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
