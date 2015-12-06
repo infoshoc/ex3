@@ -34,6 +34,7 @@ typedef void(*freeGraphVertex)(ConstGraphVertex);
 Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex);
 void graphDestroy(Graph graph);
 GraphResult graphAddVertex(Graph graph, ConstGraphVertex vertex);
+GraphResult graphRemoveVertex(Graph graph, ConstGraphVertex vertex);
 bool graphIsVertexExists(ConstGraph graph, ConstGraphVertex vertex);
 GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to);
 GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to);
