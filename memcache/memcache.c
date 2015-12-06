@@ -31,10 +31,11 @@ typedef struct MemCache_t {
 typedef enum MemCacheBlockMode {
 	USER = 'U', GROUP = 'G', ALL = 'A'
 } MemCacheBlockMode;
-
 typedef const MemCacheBlockMode ConstMemCacheBlockMode;
+
 typedef void *MemCacheBlock;
 typedef const void* const ConstMemCacheBlock;
+
 typedef char *MemCacheUser;
 typedef const char* const ConstMemCacheUser;
 typedef int *MemCacheLimit;
@@ -47,11 +48,10 @@ typedef const int * const ConstMemCacheLimit;
 		}\
 	} while(false);
 
-static void memcacheBlockFree(MemCacheBlock block) {
-	// TODO
-}
+static void memcacheDoNothing(MemCacheBlock block){}
+
 static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
-	// TODO
+	return block;
 }
 static int memcacheBlocksCompare(MemCacheBlock a, MemCacheBlock b) {
 	return (char*)a - (char*)b;
@@ -87,7 +87,6 @@ static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
 static void memcacheLimitFree(MemCacheLimit limit) {
 	//TODO
 }
-static void memcacheDoNothing(MemCacheBlock){}
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	// TODO
 }
@@ -108,14 +107,18 @@ MemCache memCacheCreate() {
 
 	memcache->freeBlocks = cacheCreate(
 			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
-			memcacheBlockFree,
+			// we should not deallocate block while clearing, we might need it
+			memcacheDoNothing,
+			// we should not really copy block either, it will be the same block
 			memcacheBlockCopy,
 			memcacheBlocksCompare,
 			memcacheAvailibleBlockComputeKey);
 
 	memcache->allocatedBlocks = cacheCreate(
 			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
-			memcacheBlockFree,
+			// we should not deallocate block while clearing, we might need it
+			memcacheDoNothing,
+			// we should not really copy block either, it will be the same block
 			memcacheBlockCopy,
 			memcacheBlocksCompare,
 			memcacheAllocatedBlockComputeKey);
@@ -243,22 +246,22 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 			return MEMCACHE_PERMISSION_DENIED;
 		}
 		break;
+	case ALL:
+		// nothing special to do
+		break;
+	default:
+		assert(false);
 	}
 
 	int blockSize = memcacheBlockGetSize(ptr);
-	memcacheUserIncreaseMemoryLimit(owner, blockSize);
-	if (blockSize > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
-		memcacheBlockFree(ptr);
-	} else {
-		assert(memcacheBlockGetSize(ptr) <= MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE);
-		CacheResult cachePushResult = cachePush(memcache->freeBlocks, ptr);
-		if (cachePushResult == CACHE_OUT_OF_MEMORY) {
-			return MEMCACHE_OUT_OF_MEMORY;
-		}
-		assert(CACHE_SUCCESS == cachePushResult);
-	}
 
-	cacheExtractElementByKey(memcache->allocatedBlocks, ptr);
+	if (blockSize > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
+		memcacheFreeBlock(ptr);
+	} else {
+		assert(blockSize <= MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE);
+		cachePush(memcache->freeBlocks, ptr);
+	}
+	cacheFreeElement(memcache->allocatedBlocks, ptr); //remove WITHOUT releasing
 
 	return MEMCACHE_SUCCESS;
 }
@@ -276,24 +279,4 @@ void* memCacheGetNextFreeBlock(MemCache memcache) {
 		return NULL;
 	}
 	return setGetNext(memcache->allFreeBlocks);
-}
-
-MemCachResult memCacheReset(MemCache memcache) {
-	if (memcache == NULL) {
-		return MEMCACHE_NULL_ARGUMENT;
-	}
-	GraphResult graphClearResult = graphClear(memcache->userRelations);
-	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
-	CacheResult allocatedCacheClearResult = cacheClear(memcache->allocatedBlocks);
-	CacheResult freeCacheClearResult = cacheClear(memcache->freeBlocks);
-	SetResult allocatedSetClearResult = setClear(memcache->allAllocatedBlocks);
-	SetResult freeSetClearResult = setClear(memcache->allFreeBlocks);
-	assert(graphClearResult == GRAPH_SUCCESS &&
-			mapClearResult == MAP_SUCCESS &&
-			allocatedCacheClearResult == CACHE_SUCCESS &&
-			freeCacheClearResult == CACHE_SUCCESS &&
-			allocatedSetClearResult == SET_SUCCESS &&
-			freeSetClearResult == SET_SUCCESS);
-
-	return MEMCACHE_SUCCESS;
 }
