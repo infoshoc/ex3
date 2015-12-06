@@ -13,7 +13,7 @@
 #include "map.h"
 #include "set.h"
 
-#define MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE (265)
+#define MEMCACHE_FREE_BLOCK_MAX_SIZE (265)
 #define MEMCACHE_ALLOCATED_BLOCK_MODULO (65536)
 #define MEMCACHE_USER_NAME_LENGTH (8)
 
@@ -106,7 +106,7 @@ MemCache memCacheCreate() {
 	MEMCACHE_ALLOCATE(MemCache_t, memcache, NULL);
 
 	memcache->freeBlocks = cacheCreate(
-			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
+			MEMCACHE_FREE_BLOCK_MAX_SIZE,
 			// we should not deallocate block while clearing, we might need it
 			memcacheDoNothing,
 			// we should not really copy block either, it will be the same block
@@ -115,7 +115,7 @@ MemCache memCacheCreate() {
 			memcacheAvailibleBlockComputeKey);
 
 	memcache->allocatedBlocks = cacheCreate(
-			MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE,
+			MEMCACHE_FREE_BLOCK_MAX_SIZE,
 			// we should not deallocate block while clearing, we might need it
 			memcacheDoNothing,
 			// we should not really copy block either, it will be the same block
@@ -254,18 +254,20 @@ MemCachResult memCacheFree(MemCache memcache, const char* const username, void* 
 	}
 
 	int blockSize = memcacheBlockGetSize(ptr);
-
-	if (blockSize > MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE) {
+	memcacheIncreaseUserLimit(owner, blockSize);
+	if (blockSize > MEMCACHE_FREE_BLOCK_MAX_SIZE) {
+		// release without removing from cache
 		memcacheFreeBlock(ptr);
 	} else {
-		assert(blockSize <= MEMCACHE_AVAILIBLE_BLOCK_MAX_SIZE);
+		assert(blockSize <= MEMCACHE_FREE_BLOCK_MAX_SIZE);
 		cachePush(memcache->freeBlocks, ptr);
 	}
-	cacheFreeElement(memcache->allocatedBlocks, ptr); //remove WITHOUT releasing
+	//remove WITHOUT releasing
+	CacheResult cacheFreeResult = cacheFreeElement(memcache->allocatedBlocks, ptr);
+	assert(cacheFreeResult == CACHE_SUCCESS);
 
 	return MEMCACHE_SUCCESS;
 }
-
 
 void* memCacheGetNextAllocatedBlock(MemCache memcache) {
 	if (memcache == NULL) {
@@ -279,4 +281,28 @@ void* memCacheGetNextFreeBlock(MemCache memcache) {
 		return NULL;
 	}
 	return setGetNext(memcache->allFreeBlocks);
+}
+
+static CacheResult memCacheClearBlockCache(Cache cache, int size) {
+	assert(cache != NULL && size > 0);
+	for (int key = 0; key < size; ++key) {
+		MemCacheBlock block;
+		while ((block = cacheExtractElementByKey(cache, size)) != NULL) {
+			memcacheFreeBlock(block);
+		}
+	}
+	return cacheClear(cache);
+}
+
+void memCacheReset(MemCache memcache) {
+	graphClear(memcache->userRelations);
+	mapClear(memcache->userMemoryLimit);
+
+	// remove without releasing
+	setClear(memcache->allAllocatedBlocks);
+	setClear(memcache->allFreeBlocks);
+
+	// remove and release all blocks
+	memCacheClearBlockCache(memcache->allocatedBlocks, MEMCACHE_ALLOCATED_BLOCK_MODULO);
+	memCacheClearBlockCache(memcache->freeBlocks, MEMCACHE_FREE_BLOCK_MAX_SIZE);
 }

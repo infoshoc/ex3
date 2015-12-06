@@ -244,7 +244,7 @@ MemCachResult memCacheReset(MemCache memcache);
 * Macro for iterating over a free blocks.
 * Declares a new iterator for the loop.
 */
-#define MEMCACHE_ALLOCATED_FOREACH(type,iterator,memcache) \
+#define MEMCACHE_FREE_FOREACH(type,iterator,memcache) \
 	for(type iterator = memcacheGetFirstFreeBlock(memcache) ; \
 		iterator ;\
 		iterator = memcacheGetNextFreeBlock(memcache))
