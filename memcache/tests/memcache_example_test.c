@@ -292,6 +292,25 @@ static bool memCacheAllocateTest(void) {
 	return true;
 }
 
+static bool memCacheFreeTest() {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	//users
+	const char * const user1 = "gammaray";
+	const char * const user2 = "scorpion";
+	const char * const user3 = "amaranth";
+	const char * const user4 = "nightwis";
+
+	// add users to system
+	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 266), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 300), MEMCACHE_SUCCESS);
+
+	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL) == MEMCACHE_BLOCK_NOT_ALLOCATED);
+	// TODO finish writing
+}
+
 static bool memCacheAllocatedBlockForeachTest() {
 	// NULL stable
 	ASSERT_NULL(memCacheGetFirstAllocatedBlock(NULL));
