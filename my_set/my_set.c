@@ -21,7 +21,7 @@ typedef struct MySet_t {
 		if(NULL == (variable = (type*)malloc(sizeof(type)))) { \
 			return error; \
 		} \
-	}while(false);
+	}while(false)
 
 MySet mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, compareMySetElements compareElements) {
 	MySet set;

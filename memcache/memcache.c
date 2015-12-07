@@ -46,7 +46,7 @@ typedef const int * const ConstMemCacheLimit;
 		if (!(var = (type*)malloc(sizeof(type)))) { \
 			return error;\
 		}\
-	} while(false);
+	} while(false)
 
 static void memcacheDoNothing(MemCacheBlock block){}
 
@@ -88,7 +88,13 @@ static void memcacheLimitFree(MemCacheLimit limit) {
 	//TODO
 }
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
-	// TODO
+	if (user == NULL) {
+		return false;
+	}
+	if (user[MEMCACHE_USER_NAME_LENGTH+1] != '\0') {
+		return false;
+	}
+	return strlen(user) == MEMCACHE_USER_NAME_LENGTH;
 }
 static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
 	assert(memcache != NULL);

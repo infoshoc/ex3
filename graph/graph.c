@@ -29,7 +29,7 @@ typedef struct GraphEdge_t * GraphEdge;
 		if (NULL == (var = (type*)malloc(sizeof(type)))) { \
 			return error; \
 		} \
-	} while(false);
+	} while(false)
 
 static GraphEdge graphEdgeCreate(ConstGraph graph, ConstGraphVertex from, ConstGraphVertex to) {
 	GraphEdge edge;
