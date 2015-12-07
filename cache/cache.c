@@ -18,7 +18,7 @@ typedef struct cache_t {
 		if (NULL == (var = (type*)malloc(sizeof(type)))) { \
 			return error; \
 		} \
-	} while(false);
+	} while(false)
 
 #define CACHE_CONTAINER_FOREACH(index, cache) \
 		for (int index = 0; index < cache->cache_size; ++index)
@@ -89,7 +89,7 @@ CacheResult cacheFreeElement(Cache cache, CacheElement element) {
 
 	int key = cache->computeKey(element);
 	if (!cacheIsKeyCorrect(cache, key)){
-		return CACHE_OUT_OF_RANGE;
+		return CACHE_ITEM_DOES_NOT_EXIST;
 	}
 	SetResult removeResult = setRemove(cache->container[key], element);
 	if (removeResult == SET_ITEM_DOES_NOT_EXIST) {
