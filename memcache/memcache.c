@@ -125,7 +125,7 @@ static void memcacheIncreaseUserLimit(MemCache memcache, ConstMemCacheUser user,
 	assert(memcacheIsUserNameLegal(user));
 	assert(memcacheIsUserExists(memcache, user));
 	assert(mapContains(memcache->userMemoryLimit, user));
-	MemCacheLimit oldLimit = mapGet(memcahce->userMemoryLimit, user);
+	MemCacheLimit oldLimit = mapGet(memcache->userMemoryLimit, user);
 	*(int*)oldLimit += inc;
 }
 
