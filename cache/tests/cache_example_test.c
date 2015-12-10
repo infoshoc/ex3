@@ -121,6 +121,7 @@ static bool testCachePush() {
 
 static bool testCacheExtractElementByKey() {
 	const char * const andykaufman = "andykaufman";
+	const char * const agonist = "agonist";
 	const char * const nightwish = "nightwish";
 
 	Cache cache = cacheCreate(256, freeString, copyString, compareStrings, getFirstLetter);
@@ -132,8 +133,11 @@ static bool testCacheExtractElementByKey() {
 	ASSERT_TEST(cachePush(cache, andykaufman) == CACHE_SUCCESS);
 	ASSERT_TEST(cachePush(cache, andykaufman) == CACHE_ITEM_ALREADY_EXISTS);
 	ASSERT_TEST(cacheIsIn(cache, andykaufman));
+	ASSERT_TEST(cachePush(cache, agonist) == CACHE_SUCCESS);
+	ASSERT_TEST(cachePush(cache, agonist) == CACHE_ITEM_ALREADY_EXISTS);
+	ASSERT_TEST(cacheIsIn(cache, agonist));
 
-	const int SIZE = 2;
+	const int SIZE = 3;
 	char * elements[SIZE];
 	int i = 0;
 	CACHE_FOREACH(set, cache) {
@@ -143,7 +147,11 @@ static bool testCacheExtractElementByKey() {
 	}
 	ASSERT_TEST(i == SIZE);
 
-	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(andykaufman) == elements[0]));
+	const char * const ex1 = cacheExtractElementByKey(cache, getFirstLetter(andykaufman));
+	const char * const ex2 = cacheExtractElementByKey(cache, getFirstLetter(agonist));
+	ASSERT_TEST((ex1 == elements[0] && ex2 == elements[1]) ||
+			(ex2 == elements[0] && ex1 == elements[1]));
+	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(agonist) == elements[0]));
 	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish) == elements[1]));
 	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(andykaufman) == NULL));
 	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish) == NULL));
@@ -216,6 +224,7 @@ int main() {
 	RUN_TEST(testCacheExample);
 	RUN_TEST(testCachePush);
 	RUN_TEST(testCacheExtractElementByKey);
+	RUN_TEST(testCacheForeach);
 	return 0;
 }
 

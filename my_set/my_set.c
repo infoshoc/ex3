@@ -24,6 +24,12 @@ typedef struct MySet_t {
 	}while(false)
 
 MySet mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, compareMySetElements compareElements) {
+	if (copyElement == NULL ||
+			freeElement == NULL ||
+			compareElements == NULL) {
+		return NULL;
+	}
+
 	MySet set;
 	MY_SET_ALLOCATION(MySet_t, set, NULL);
 
@@ -99,7 +105,8 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 		// find last position where element is lower then outs or last element
 		MySetNode position;
 		for (position = set->head;
-				position->next != NULL && set->compareElements(position->next->element, element) < 0;
+				position->next != NULL &&
+						set->compareElements(position->next->element, element) < 0;
 				position = position->next);
 		assert(position != NULL);
 		// insert after position

@@ -6,6 +6,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include "memcache.h"
 #include "cache.h"
@@ -37,7 +38,7 @@ typedef void *MemCacheBlock;
 typedef const void* const ConstMemCacheBlock;
 
 typedef char *MemCacheUser;
-typedef const char* const ConstMemCacheUser;
+typedef const char ConstMemCacheUser[MEMCACHE_USER_NAME_LENGTH+1];
 typedef int *MemCacheLimit;
 typedef const int * const ConstMemCacheLimit;
 
@@ -54,38 +55,24 @@ static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
 	return block;
 }
 static int memcacheBlocksCompare(MemCacheBlock a, MemCacheBlock b) {
-	return (char*)a - (char*)b;
+	// in order to escape overflow in difference
+	return (char*)a < (char*)b ? -1 : (char*)a == (char*)b ? 0 : 1;
 }
-static int memcacheBlockGetSize(MemCacheBlock block) {
-	//TODO
+static inline int memcacheBlockGetSize(MemCacheBlock block) {
+	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-sizeof(int));
 }
-static MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
-	//TODO
+static inline MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
+	return *((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1);
 }
 /** Function returns owner of block (NOT COPY) */
 static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
-	//TODO
+	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
-	// TODO
+	return memcacheBlockGetSize(block) % MEMCACHE_ALLOCATED_BLOCK_MODULO;
 }
 static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
 	return memcacheBlockGetSize(block)-1;
-}
-static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
-	// TODO
-}
-static int memcacheUsersCompare(ConstMemCacheUser a, ConstMemCacheUser b) {
-	// TODO
-}
-static void memcacheUserFree(MemCacheUser user) {
-	//TODO
-}
-static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
-	//TODO
-}
-static void memcacheLimitFree(MemCacheLimit limit) {
-	//TODO
 }
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	if (user == NULL) {
@@ -96,6 +83,32 @@ static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	}
 	return strlen(user) == MEMCACHE_USER_NAME_LENGTH;
 }
+static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
+	assert(memcacheIsUserNameLegal(user));
+	MemCacheUser copy;
+	MEMCACHE_ALLOCATE(ConstMemCacheUser, copy, NULL);
+
+	strcpy(copy, user);
+	return copy;
+
+}
+static int memcacheUsersCompare(ConstMemCacheUser user1, ConstMemCacheUser user2) {
+	assert(memcacheIsUserNameLegal(user1) && memcacheIsUserNameLegal(user2));
+	return strcmp(user1, user2);
+}
+static void memcacheUserFree(MemCacheUser user) {
+	free(user);
+}
+static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
+	MemCacheLimit copy;
+	MEMCACHE_ALLOCATE(int, copy, NULL);
+
+	*(int*)copy = *(int*)limit;
+	return copy;
+}
+static void memcacheLimitFree(MemCacheLimit limit) {
+	free(limit);
+}
 static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
 	assert(memcache != NULL);
 	if (!memcacheIsUserNameLegal(user)) {
@@ -105,6 +118,15 @@ static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
 			graphIsVertexExists(memcache->userRelations, user));
 
 	return mapContains(memcache->userMemoryLimit, user);
+}
+
+static void memcacheIncreaseUserLimit(MemCache memcache, ConstMemCacheUser user, const int inc) {
+	assert(memcache != NULL);
+	assert(memcacheIsUserNameLegal(user));
+	assert(memcacheIsUserExists(memcache, user));
+	assert(mapContains(memcache->userMemoryLimit, user));
+	MemCacheLimit oldLimit = mapGet(memcahce->userMemoryLimit, user);
+	*(int*)oldLimit += inc;
 }
 
 MemCache memCacheCreate() {
