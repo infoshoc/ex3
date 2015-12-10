@@ -69,7 +69,7 @@ static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
-	return memcacheBlockGetSize(block) % MEMCACHE_ALLOCATED_BLOCK_MODULO;
+	return block % MEMCACHE_ALLOCATED_BLOCK_MODULO;
 }
 static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
 	return memcacheBlockGetSize(block)-1;
