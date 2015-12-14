@@ -15,7 +15,7 @@
 #include "set.h"
 
 #define MEMCACHE_FREE_BLOCK_MAX_SIZE (265)
-#define MEMCACHE_ALLOCATED_BLOCK_MODULO (65536)
+#define MEMCACHE_ALLOCATED_BLOCK_MODULO (1<<10)
 #define MEMCACHE_USER_NAME_LENGTH (8)
 
 typedef struct MemCache_t {
