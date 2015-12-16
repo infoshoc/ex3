@@ -60,7 +60,7 @@ void memCacheDestroy(MemCache memcache);
  * 	MEMCACHE_USERNAME_ALREADY_USED - if username already used by other user
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory lack
  */
-MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int memory_limit);
+MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit);
 
 /**
  * Changes permission for block
@@ -81,7 +81,7 @@ MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int
  * 	MEMCACHE_PERMISSION_DENIES - if username is not user who allocated block
  * 	MEMCACHE_INVALID_ARGUMENT - if mode is not legal
  */
-MemCachResult memCacheSetBlockMod(MemCache memcache, const char* const username, void* ptr, char mod);
+MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod);
 
 /**
  * Adds username2 to username1's trusted group (if he is already there nothing is done)
@@ -96,7 +96,7 @@ MemCachResult memCacheSetBlockMod(MemCache memcache, const char* const username,
  * 	MEMCACHE_USER_NOT_FOUND - if user with name username1 or username2 doesn't exist
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheTrust(MemCache memcache, const char* const username1, const char* const username2);
+MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2);
 
 /**
  * Removes username2 from username1's trusted group (if he is not there nothing is done)
@@ -111,7 +111,7 @@ MemCachResult memCacheTrust(MemCache memcache, const char* const username1, cons
  * 	MEMCACHE_USER_NOT_FOUND - if user with name username1 or username2 doesn't exist
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheUntrust(MemCache memcache, const char* const username1, const char* const username2);
+MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username2);
 
 /**
  * Allocates block of memory of size for username (if he didn't exceed  limit)
@@ -123,7 +123,7 @@ MemCachResult memCacheUntrust(MemCache memcache, const char* const username1, co
  *
  * @return address of allocated block or NULL in case of error
  */
-void* memCacheAllocate(MemCache memcache, const char* const username, int size);
+void* memCacheAllocate(MemCache memcache, char* username, int size);
 
 /**
  * Releases block ptr
@@ -140,7 +140,7 @@ void* memCacheAllocate(MemCache memcache, const char* const username, int size);
  * 	MEMCACHE_PERMISSION_DENIED - username have no rights to release block
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheFree(MemCache memcache, const char* const username, void* ptr);
+MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr);
 
 /**
  * Sets the internal iterator (also called current element) to
@@ -235,18 +235,18 @@ MemCachResult memCacheReset(MemCache memcache);
 * Macro for iterating over a allocated blocks.
 * Declares a new iterator for the loop.
 */
-#define MEMCACHE_ALLOCATED_FOREACH(type,iterator,memcache) \
-	for(type iterator = memcacheGetFirstAllocatedBlock(memcache) ; \
-		iterator ;\
+#define MEMCACHE_ALLOCATED_FOREACH(iterator,memcache) \
+	for(void *iterator = memCacheGetFirstAllocatedBlock(memcache) ; \
+		iterator;\
 		iterator = memcacheGetNextAllocatedBlock(memcache))
 
 /*!
 * Macro for iterating over a free blocks.
 * Declares a new iterator for the loop.
 */
-#define MEMCACHE_FREE_FOREACH(type,iterator,memcache) \
-	for(type iterator = memcacheGetFirstFreeBlock(memcache) ; \
-		iterator ;\
+#define MEMCACHE_FREE_FOREACH(iterator,memcache) \
+	for(void *iterator = memcacheGetFirstFreeBlock(memcache) ; \
+		iterator;\
 		iterator = memcacheGetNextFreeBlock(memcache))
 
 #endif /* MEMCACHE_H_ */

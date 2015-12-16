@@ -1,7 +1,6 @@
 #include "test_utilities.h"
 #include <stdlib.h>
 #include "../cache.h"
-#include "../set.h"
 #include <string.h>
 
 /**
@@ -59,7 +58,10 @@ bool testCacheExample() {
 
   ASSERT_TEST(cacheIsIn(cache, empty_string) == true);
   ASSERT_TEST(cacheIsIn(cache, goodbye) == true);
-  ASSERT_TEST(strcmp(cacheExtractElementByKey(cache, 0), "") == 0);
+  
+  char* temp_ptr;
+  temp_ptr = cacheExtractElementByKey(cache, 0);
+  ASSERT_TEST(strcmp(temp_ptr, "") == 0);
   ASSERT_TEST(cacheIsIn(cache, empty_string) == false);
   ASSERT_TEST(cacheFreeElement(cache, goodbye) == CACHE_SUCCESS);
   ASSERT_TEST(cacheIsIn(cache, goodbye) == false);
@@ -67,6 +69,7 @@ bool testCacheExample() {
   ASSERT_TEST(cacheClear(cache) == CACHE_SUCCESS);
   ASSERT_TEST(setGetFirst(cacheGetFirst(cache)) == NULL);
 
+  free(temp_ptr);
   cacheDestroy(cache);
   return true;
 }

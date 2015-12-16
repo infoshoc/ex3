@@ -189,7 +189,7 @@ MemCache memCacheCreate() {
 	return memcache;
 }
 
-MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int memory_limit) {
+MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -221,10 +221,7 @@ MemCachResult memCacheAddUser(MemCache memcache, const char* const username, int
 	return MEMCACHE_SUCCESS;
 }
 
-MemCachResult memCacheTrust(
-		MemCache memcache,
-		const char* const username1,
-		const char* const username2) {
+MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -248,7 +245,7 @@ MemCachResult memCacheTrust(
 	return MEMCACHE_SUCCESS;
 }
 
-MemCachResult memCacheFree(MemCache memcache, const char* const username, void* ptr) {
+MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
