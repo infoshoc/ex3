@@ -27,11 +27,11 @@ typedef enum GraphResult_t {
 typedef void * GraphVertex;
 typedef const void * const ConstGraphVertex;
 
-typedef GraphVertex(*copyGraphVertex)(ConstGraphVertex);
-typedef int(*compareGraphVertex)(ConstGraphVertex, ConstGraphVertex);
-typedef void(*freeGraphVertex)(ConstGraphVertex);
+typedef GraphVertex(*CopyGraphVertex)(ConstGraphVertex);
+typedef int(*CompareGraphVertex)(ConstGraphVertex, ConstGraphVertex);
+typedef void(*FreeGraphVertex)(ConstGraphVertex);
 
-Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex);
+Graph graphCreate(CopyGraphVertex copyVertex, CompareGraphVertex compareVertex, FreeGraphVertex freeVertex);
 void graphDestroy(Graph graph);
 GraphResult graphAddVertex(Graph graph, ConstGraphVertex vertex);
 GraphResult graphRemoveVertex(Graph graph, ConstGraphVertex vertex);
