@@ -18,14 +18,17 @@ typedef struct Graph_t {
 	Set edges;
 } Graph_t;
 
+/** Struct for directed edges */
 typedef struct GraphEdge_t {
-	Graph graph; // just from vertex functions
+	Graph graph; // just for vertex functions
 	GraphVertex from;
 	GraphVertex to;
-} GraphEdge_t;
-typedef const struct GraphEdge_t * const ConstGraphEdge;
-typedef struct GraphEdge_t * GraphEdge;
+} GraphEdge_t, *GraphEdge;
 
+/**
+ * Safe allocation of an object of given type to var, which returns error in
+ * case of failiture
+ */
 #define GRAPH_ALLOCATE(type, var, error) \
 	do { \
 		if (NULL == (var = (type*)malloc(sizeof(type)))) { \
@@ -33,6 +36,7 @@ typedef struct GraphEdge_t * GraphEdge;
 		} \
 	} while(false)
 
+/** Creates new directed edge for graph */
 static GraphEdge graphEdgeCreate(Graph graph, GraphVertex from, GraphVertex to) {
 	GraphEdge edge;
 	GRAPH_ALLOCATE(GraphEdge_t, edge, NULL);
@@ -53,10 +57,12 @@ static GraphEdge graphEdgeCreate(Graph graph, GraphVertex from, GraphVertex to) 
 	return edge;
 }
 
+/** Copies a directed edge  */
 static GraphEdge graphEdgeCopy(GraphEdge edge) {
 	return graphEdgeCreate(edge->graph, edge->from, edge->to);
 }
 
+/** Frees a directed edge */
 static void graphEdgeFree(GraphEdge edge) {
 	if (edge == NULL) {
 		return;
@@ -67,6 +73,7 @@ static void graphEdgeFree(GraphEdge edge) {
 }
 
 /**
+ * Compares two edges
  * if first from-vertex less then second returns negative number
  * if first from-vertex greater then second returns positive number
  * if from-vertices are equal returns negative number if first to-vertex less
