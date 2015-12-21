@@ -87,8 +87,6 @@ Graph graphCreate(CopyGraphVertex copyVertex, CompareGraphVertex compareVertex, 
 }
 
 void graphDestroy(Graph graph) {
-	//int numberEdges = setGetSize(graph->edges);
-	//int numberVertices = setGetSize(graph->vertices);
 	setDestroy(graph->vertices);
 	setDestroy(graph->edges);
 }
@@ -116,7 +114,8 @@ GraphResult graphRemoveVertex(Graph graph, ConstGraphVertex vertex){
 		return GRAPH_VERTEX_DOES_NOT_EXISTS;
 	}
 	SetResult removing = setRemove(graph->vertices, vertex);
-	freeGraphVertex (vertex);
+	assert(removing == SET_SUCCESS);
+	// TODO remove all edges connected to vertex!
 	return GRAPH_SUCCESS;
 }
 
@@ -132,6 +131,9 @@ GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphV
 	if (graph == NULL || from == NULL || to == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
+	if (!graphIsVertexExists(graph, from) || !graphIsVertexExists(graph, to)) {
+		return GRAPH_VERTEX_DOES_NOT_EXISTS;
+	}
 	if (graphIsDirectedEdge(graph, from, to)) {
 		return GRAPH_EDGE_ALREADY_EXISTS;
 	}
@@ -145,6 +147,7 @@ GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphV
 		return GRAPH_OUT_OF_MEMORY;
 	}
 	assert(setAddResult == SET_SUCCESS);
+	graphEdgeFree(newEdge);
 	return GRAPH_SUCCESS;
 }
 
@@ -161,6 +164,7 @@ GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGra
 	}
 	SetResult setRemoveResult = setRemove(graph->edges, edge);
 	assert(setRemoveResult == SET_SUCCESS);
+	graphEdgeFree(edge);
 	return GRAPH_SUCCESS;
 }
 
