@@ -134,7 +134,7 @@ GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphV
 	if (!graphIsVertexExists(graph, from) || !graphIsVertexExists(graph, to)) {
 		return GRAPH_VERTEX_DOES_NOT_EXISTS;
 	}
-	if (graphIsDirectedEdge(graph, from, to)) {
+	if (graphIsDirectedEdgeExists(graph, from, to)) {
 		return GRAPH_EDGE_ALREADY_EXISTS;
 	}
 	GraphEdge newEdge = graphEdgeCreate(graph, from, to);
@@ -155,7 +155,7 @@ GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGra
 	if (graph == NULL || from == NULL || to == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
-	if (!graphIsDirectedEdge(graph, from, to)) {
+	if (!graphIsDirectedEdgeExists(graph, from, to)) {
 		return GRAPH_EDGE_DOES_NOT_EXISTS;
 	}
 	GraphEdge edge = graphEdgeCreate(graph, from, to);
@@ -168,17 +168,15 @@ GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGra
 	return GRAPH_SUCCESS;
 }
 
-bool graphIsDirectedEdge(Graph graph,  ConstGraphVertex from, ConstGraphVertex to){
+bool graphIsDirectedEdgeExists(Graph graph,  ConstGraphVertex from, ConstGraphVertex to){
 	if (graph == NULL || from == NULL || to == NULL) {
-			return GRAPH_NULL_ARGUMENT;
-		}
-		if (!graphIsDirectedEdge(graph, from, to)) {
-			return GRAPH_EDGE_DOES_NOT_EXISTS;
-		}
-		GraphEdge edge = graphEdgeCreate(graph, from, to);
-		bool isIn = setIsIn(graph->edges, edge);
-		graphEdgeFree(GraphEdge edge);
-		return isIn;
+		return false;
+	}
+
+	GraphEdge edge = graphEdgeCreate(graph, from, to);
+	bool isIn = setIsIn(graph->edges, edge);
+	graphEdgeFree(edge);
+	return isIn;
 }
 
 GraphResult graphClear(Graph graph) {
