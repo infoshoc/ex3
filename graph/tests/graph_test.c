@@ -170,10 +170,78 @@ static bool graphIsDirectedEdgeTest() {
 	return true;
 }
 
+static bool graphRemoveVertexTest() {
+	// vertices
+	char * vertex1 = "Cherkasy";
+	char * vertex2 = "Lviv";
+	char * vertex3 = "Amber";
+	char * vertex4 = "Haifa";
+	char * vertex5 = "TelAviv";
+
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, free);
+	ASSERT_TEST(graph != NULL);
+
+	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex4) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex5) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphIsVertexExists(graph, vertex1));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex2));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex4));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex5));
+
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex4, vertex5) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex4, vertex5));
+
+	// is NULL stable
+	ASSERT_TEST(graphRemoveVertex(NULL, NULL) == GRAPH_NULL_ARGUMENT);
+	ASSERT_TEST(graphRemoveVertex(graph, NULL) == GRAPH_NULL_ARGUMENT);
+	ASSERT_TEST(graphRemoveVertex(NULL, vertex1) == GRAPH_NULL_ARGUMENT);
+
+
+	ASSERT_TEST(graphRemoveVertex(graph, vertex3) == GRAPH_VERTEX_DOES_NOT_EXISTS);
+	ASSERT_TEST(graphRemoveVertex(graph, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphIsVertexExists(graph, vertex1));
+	ASSERT_TEST(!graphIsVertexExists(graph, vertex2));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex4));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex5));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex4, vertex5));
+	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphIsVertexExists(graph, vertex1));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex2));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex4));
+	ASSERT_TEST(graphIsVertexExists(graph, vertex5));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex4, vertex5));
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex4, vertex5));
+
+	graphDestroy(graph);
+
+	return true;
+}
+
 int main() {
 	RUN_TEST(graphDestroyTest);
 	RUN_TEST(graphAddDirectedEdgeTest);
 	RUN_TEST(graphIsDirectedEdgeTest);
+	RUN_TEST(graphRemoveVertexTest);
 
 	return 0;
 }
