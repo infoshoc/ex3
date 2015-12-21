@@ -136,7 +136,8 @@ GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex){
 		SET_FOREACH(GraphEdge, edge, graph->edges) {
 			if (graph->compareVertex(edge->from, vertex) == 0 ||
 					graph->compareVertex(edge->to, vertex) == 0 ) {
-				setRemove(graph->edges, edge);
+				SetResult removeResult = setRemove(graph->edges, edge);
+				assert(removeResult == SET_SUCCESS);
 				found = true;
 				break;
 			}
