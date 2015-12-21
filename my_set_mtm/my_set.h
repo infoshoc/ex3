@@ -127,14 +127,13 @@ bool mySetIsIn(MySet set, MySetElement element);
 
 /**
 *	mySetGetFirst: Sets the internal iterator (also called current element) to
-*	the first element in the mySet. The "first" element is the one having the
-*	lowest value as determined by the comparison function used to initialize the
-*	mySet.
+*	the first element in the mySet.
 *	Use this to start iteraing over the mySet.
 *	Use (To continue iteration use mySetGetNext)
 *
 * @param set - The mySet for which to set the iterator and return the first
-* 		element.
+* 		element. By "first" element we mean the element with the smallest value
+*       among all elements following the comparison funcrion.
 * @return
 * 	NULL if a NULL pointer was sent or the mySet is empty.
 * 	The first element of the mySet otherwise
@@ -142,8 +141,8 @@ bool mySetIsIn(MySet set, MySetElement element);
 MySetElement mySetGetFirst(MySet set);
 
 /**
-*	mySetGetNext: Advances the mySet iterator to the next element and returns it
-*	The next element is determined by the comparison function induced order.
+*	mySetGetNext: Advances the mySet iterator to the next element and returns it.
+*                 Again, iteration is done by order defined by the comparison function.
 * @param set - The mySet for which to advance the iterator
 * @return
 * 	NULL if reached the end of the mySet, or the iterator is at an invalid state
@@ -206,8 +205,7 @@ MySetResult mySetRemove(MySet set, MySetElement element);
 * @param set -
 *   The mySet to remove the element from.
 * @param element
-*   The element to remove from the mySet. The element will be freed using the
-*   free function given at initialization.
+*   The element to remove from the mySet.
 * @return
 *   NULL if a NULL was sent as set or if the element doesn't exist in the mySet,
 *   the removed element otherwise.

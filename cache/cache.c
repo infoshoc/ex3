@@ -5,106 +5,73 @@
 #include <stdlib.h>
 #include <string.h>
 
-/**
- * returns number of cell for oranges of special size
- */
-inline static int cacheGetCellIndexForOrangeSize(const int size) {
-	return size-1;
-}
+#define CACHE_INVALID_ITERATOR_INDEX 1
+typedef struct cache_t {
+	ComputeCacheKey computeKey;
+	Set *container;
+	int cache_size;
+	int iteratorIndex;
+} cache_t;
+
+#define CACHE_ALLOCATE(type, var, error) \
+	do { \
+		if (NULL == (var = (type*)malloc(sizeof(type)))) { \
+			return error; \
+		} \
+	} while(false)
+
+#define CACHE_CONTAINER_FOREACH(index, cache) \
+		for (int index = 0; index < cache->cache_size; ++index)
+
 /**
  * checks if index of cell is in range
  */
-inline static bool isCellIndexCorrect(const Cache cache, const int index) {
+inline static bool cacheIsKeyCorrect(const Cache cache, const int key) {
 	assert(cache != NULL);
-	return 0 <= index && index < cache->cache_size;
-}
-/**
- * finds index where iterator is standing in container or cache_size if it is NULL;
- */
-static int findIteratorIndex(const Cache cache) {
-	assert(cache != NULL);
-	int cellIndex;
-	for (cellIndex = 0; cellIndex < cache->cache_size &&
-		cache->container[cellIndex] != cache->iterator; ++cellIndex);
-	return cellIndex;
+	return 0 <= key && key < cache->cache_size;
 }
 /**
  * creates cache with special size
  */
-static Cache cacheCreateWithSize(const unsigned int cacheSize) {
-	assert(cacheSize > 0);
-	//memory allocation
-	Cache cache = (Cache) malloc(sizeof(*cache));
-	if (cache == NULL) {
+Cache cacheCreate(
+    int size,
+    FreeCacheElement free_element,
+    CopyCacheElement copy_element,
+    CompareCacheElements compare_elements,
+    ComputeCacheKey compute_key) {
+	if (size <= 0 || !free_element || !copy_element || !compare_elements || !compute_key) {
 		return NULL;
 	}
+	//memory allocation
+	Cache cache;
+	CACHE_ALLOCATE(cache_t, cache, NULL);
 
 	//initialization
-	cache->cache_size = cacheSize;
-	cache->iterator = NULL;
-	cache->container = (List*) malloc(cache->cache_size * sizeof(*cache->container));
+	cache->cache_size = size;
+	cache->iteratorIndex = CACHE_INVALID_ITERATOR_INDEX;
+	cache->container = (Set*)malloc(sizeof(*cache->container) * size);
 	if (cache->container == NULL) {
-		free(cache);
+		cacheDestroy(cache);
 		return NULL;
 	}
-	return cache;
-}
-/**
- * checks if company delivers current orange
- */
-static bool cacheIsOrangeDeliveredBy(const Orange orange, const char * const company){
-	assert(orange != NULL && company != NULL);
-	char* const * foodCompanies = orangeGetFoodCompanies(orange);
-	int j;
-	for (j = 0; j < orangeGetNumberOfFoodCompanies(orange) &&
-		strcmp(foodCompanies[j], company) != 0; ++j);
-	return j < orangeGetNumberOfFoodCompanies(orange);
-}
-/**
- * checks if orange is expired
- */
-inline static bool cacheIsOrangeExpired(const Orange orange) {
-	assert(orange != NULL);
-	return orangeGetExpirationMonth(orange) < CURRENT_MONTH;
-}
-
-Cache cacheCreate() {
-	Cache cache = cacheCreateWithSize(ORANGE_CACHE_SIZE);
-	if (cache == NULL) {
-		return NULL;
-	}
-	for (int i = 0; i < cache->cache_size; ++i) {
-		cache->container[i] = listCreate();
-	}
-	return cache;
-}
-
-Cache cacheCopy(Cache src) {
-	if (src == NULL){
-		return NULL;
-	}
-	Cache cacheCopied = cacheCreateWithSize(src->cache_size);
-	if (cacheCopied == NULL){
-		return NULL;
-	}
-
-	for (int i = 0; i < src->cache_size; ++i){
-		cacheCopied->container[i] = listCopy(src->container[i]);
-		if (cacheCopied->container[i] == NULL) {
-			cacheDestroy (cacheCopied);
+	CACHE_CONTAINER_FOREACH(i, cache) {
+		cache->container[i] = setCreate(copy_element, free_element, compare_elements);
+		if (cache->container[i] == NULL) {
+			cacheDestroy(cache);
 			return NULL;
 		}
 	}
-	return cacheCopied;
+	return cache;
 }
 
 CacheResult cachePush(Cache cache, Orange orange) {
+	// TODO make generic
 	if (cache == NULL || orange == NULL) {
 		return CACHE_ILLEGAL_ARGUMENT;
 	}
 
 	int cellIndex = cacheGetCellIndexForOrangeSize(orangeGetSize(orange));
-	if (!isCellIndexCorrect(cache, cellIndex)) {
+	if (!cacheIsKeyCorrect(cache, cellIndex)) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
@@ -115,23 +82,20 @@ CacheResult cachePush(Cache cache, Orange orange) {
 	return CACHE_SUCCESS;
 }
 
-CacheResult cacheFreeOrange(Cache cache, int index) {
-	if (cache == NULL) {
-		return CACHE_ILLEGAL_ARGUMENT;
+CacheResult cacheFreeElement(Cache cache, CacheElement element) {
+	if (cache == NULL || element == NULL) {
+		return CACHE_NULL_ARGUMENT;
 	}
 
-	int cellIndex = cacheGetCellIndexForOrangeSize(index);
-	if (!isCellIndexCorrect(cache, cellIndex)){
-		return CACHE_OUT_OF_RANGE;
+	int key = cache->computeKey(element);
+	if (!cacheIsKeyCorrect(cache, key)){
+		return CACHE_ITEM_DOES_NOT_EXIST;
 	}
-	if (listGetSize(cache->container[cellIndex]) == 0){
-		return CACHE_NO_ELEMENTS_IN_CELL;
+	SetResult removeResult = setRemove(cache->container[key], element);
+	if (removeResult == SET_ITEM_DOES_NOT_EXIST) {
+		return CACHE_ITEM_DOES_NOT_EXIST;
 	}
-	listGetFirst(cache->container[cellIndex]);
-	listRemoveCurrent(cache->container[cellIndex]);
-	if (listGetSize(cache->container[cellIndex]) == 0){
-		return CACHE_SUCCESS_LIST_EMPTY;
-	}
+	assert(removeResult == SET_SUCCESS);
 	return CACHE_SUCCESS;
 }
 
@@ -156,25 +120,38 @@ CacheResult cacheGet(Cache cache, int index, Orange* org) {
 	return CACHE_SUCCESS;
 }
 
+bool cacheIsIn(Cache cache, CacheElement element) {
+	if (cache == NULL || element == NULL) {
+		// null argument
+		return false;
+	}
+	int key = cache->computeKey(element);
+	if (!cacheIsKeyCorrect(cache, key)) {
+		// out of range
+		return NULL;
+	}
+	return setIsIn(cache->container[key], element);
+}
+
 List cacheGetFirst(Cache cache) {
 	assert(cache != NULL);
 	cache->iterator = cache->container[0];
 	return cache->iterator;
 }
 
-List cacheGetNext(Cache cache) {
-	assert(cache != NULL);
-	if (cache->iterator == NULL) {
+Set cacheGetNext(Cache cache) {
+	if (cache == NULL ||
+			cache->iteratorIndex == cacheGetNext) {
 		return NULL;
 	}
 
-	int cellIndex = findIteratorIndex(cache);
-
-	if (cellIndex+1 == cache->cache_size) {
-		cache->iterator = NULL;
+	if (cache->iteratorIndex + 1 == cache->cache_size) {
+		cache->iteratorIndex = CACHE_INVALID_ITERATOR_INDEX;
 		return NULL;
 	}
-	return cache->iterator = cache->container[cellIndex+1];
+	++cache->iteratorIndex;
+
+	return cache->container[cache->iteratorIndex];
 }
 
 List cacheGetCurrent(Cache cache) {
@@ -182,6 +159,19 @@ List cacheGetCurrent(Cache cache) {
 		return NULL;
 	}
 	return cache->iterator;
+}
+
+CacheResult cacheClear(Cache cache) {
+	if (cache == NULL) {
+		return CACHE_NULL_ARGUMENT;
+	}
+
+	CACHE_CONTAINER_FOREACH(i, cache) {
+		SetResult setClearResult = setClear(cache->container[i]);
+		assert(setClearResult == SET_SUCCESS);
+	}
+
+	return CACHE_SUCCESS;
 }
 
 void cacheDestroy(Cache cache) {
@@ -194,119 +184,4 @@ void cacheDestroy(Cache cache) {
 	}
 	free(cache->container);
 	free(cache);
-}
-
-List cacheGetOrangesOfCompanyFromCell(Cache cache, char* company,int index){
-	if (cache == NULL || company == NULL){
-		return NULL;
-	}
-
-	int cellIndex = cacheGetCellIndexForOrangeSize(index);
-	if (!isCellIndexCorrect(cache, cellIndex)){
-		return NULL;
-	}
-	List orangesToCell = listCreate();
-	if (orangesToCell == NULL) {
-		return NULL;
-	}
-	//searcing for oranges in cell
-	LIST_FOREACH(Orange, orange, cache->container[cellIndex]) {
-		if (cacheIsOrangeExpired(orange)) {
-			//skip expired orange
-			continue;
-		}
-
-		if (!cacheIsOrangeDeliveredBy(orange, company)) {
-			// can not get the orange from the company
-			continue;
-		}
-		if (orangeSetFoodCompanyForDelivery(orange, company) != ORANGE_SUCCESS) {
-			listDestroy(orangesToCell);
-			return NULL;
-		}
-
-		if (listInsertFirst(orangesToCell, orange) != LIST_SUCCESS){
-			listDestroy(orangesToCell);
-			return NULL;
-		}
-	}
-
-	// removing found oranges
-	for (bool removed = true; removed; ) {
-		removed = false;
-		LIST_FOREACH(Orange, orange, cache->container[cellIndex]) {
-			if (!cacheIsOrangeExpired(orange) && cacheIsOrangeDeliveredBy(orange, company)) {
-				listRemoveCurrent(cache->container[cellIndex]);
-				removed = true;
-			}
-		}
-	}
-	return orangesToCell;
-}
-
-List cacheGetAllOrangesOfCompany(Cache cache, char* company) {
-	if (cache == NULL || company == NULL) {
-		return NULL;
-	}
-
-	List listOfAllFreshOrangesOfCompany = listCreate();
-	if (listOfAllFreshOrangesOfCompany == NULL) {
-		return NULL;
-	}
-
-	for (int i = 1; i <= cache->cache_size; ++i) {
-		List oranges = cacheGetOrangesOfCompanyFromCell(cache, company, i);
-		LIST_FOREACH(Orange, orange, oranges) {
-			listInsertFirst(listOfAllFreshOrangesOfCompany, orange);
-		}
-		listDestroy(oranges);
-	}
-
-	return listOfAllFreshOrangesOfCompany;
-}
-
-List cacheDeliverOrangesWithBiggestWeight(Cache cache) {
-	assert(cache != NULL);
-	char *foodCompanyMax = NULL;
-	int weightMax = 0;
-
-	for (int i=0; i<cache->cache_size; i++){
-		LIST_FOREACH(Orange, orange, cache->container[i]) {
-			char* const * foodCompanies = orangeGetFoodCompanies(orange);
-			for (int k = 0; k < orangeGetNumberOfFoodCompanies(orange); k++){
-				Cache copyOfCache = cacheCopy(cache);
-				if (copyOfCache == NULL) {
-					free(foodCompanyMax);
-					return NULL;
-				}
-				List allOranges = cacheGetAllOrangesOfCompany(copyOfCache, foodCompanies[k]);
-				cacheDestroy(copyOfCache);
-				if (allOranges == NULL) {
-					free(foodCompanyMax);
-					return NULL;
-				}
-				int weight = 0;
-				LIST_FOREACH(Orange, orangeOfCompany, allOranges) {
-					weight += orangeGetSize(orangeOfCompany);
-				}
-				listDestroy(allOranges);
-				if (weight > weightMax ||
-						(weight == weightMax &&
-								(foodCompanyMax != NULL &&
-								strcmp(foodCompanies[k], foodCompanyMax) > 0))) {
-					weightMax = weight;
-					free(foodCompanyMax);
-					if (NULL == (foodCompanyMax = (char*)malloc(strlen(foodCompanies[k])+1))) {
-						cacheDestroy(copyOfCache);
-						return NULL;
-					}
-					strcpy(foodCompanyMax, foodCompanies[k]);
-				}
-			}
-
-		}
-	}
-	List orangesWithBiggestWeight = cacheGetAllOrangesOfCompany(cache, foodCompanyMax);
-	free(foodCompanyMax);
-	return orangesWithBiggestWeight;
 }
