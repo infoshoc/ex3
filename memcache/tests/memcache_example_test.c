@@ -332,7 +332,7 @@ static bool memCacheAllocatedBlockForeachTest() {
 
 	// allocations
 	const int SIZE2ALLOCATE_LENGTH = 9;
-	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<16), (1<<16), (1<<16)};
+	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<10), (1<<10), (1<<10)};
 	void * blocks[SIZE2ALLOCATE_LENGTH];
 	int visitedTimes[SIZE2ALLOCATE_LENGTH] = {0};
 
