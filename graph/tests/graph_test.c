@@ -19,12 +19,12 @@ static bool graphDestroyTest() {
 	// try to provoke memory leak
 
 	// vertices
-	const char * const vertex1 = "cherkasy";
-	const char * const vertex2 = "kiev";
-	const char * const vertex3 = "lviv";
-	const char * const vertexNotInGraph = "haifa";
+	char * vertex1 = "cherkasy";
+	char * vertex2 = "kiev";
+	char * vertex3 = "lviv";
+	char * vertexNotInGraph = "haifa";
 
-	Graph graph = graphCreate(stringCopy, strcmp, free);
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, free);
 	if (!graph) {
 		return false;
 	}
@@ -42,21 +42,21 @@ static bool graphDestroyTest() {
 
 	//add edges
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex3) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex2, vertex3));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex3));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex3, vertexNotInGraph) == GRAPH_VERTEX_DOES_NOT_EXISTS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex3, vertexNotInGraph));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex3, vertexNotInGraph));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertexNotInGraph, vertex3) == GRAPH_VERTEX_DOES_NOT_EXISTS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertexNotInGraph, vertex3));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertexNotInGraph, vertex3));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_EDGE_ALREADY_EXISTS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
 
 	//remove some
 	ASSERT_TEST(graphRemoveDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
 	ASSERT_TEST(graphRemoveDirectedEdge(graph, vertex1, vertex2) == GRAPH_EDGE_DOES_NOT_EXISTS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
 
 	graphDestroy(graph);
 	return true;
@@ -64,13 +64,13 @@ static bool graphDestroyTest() {
 
 static bool graphAddDirectedEdgeTest() {
 	// vertices
-	const char * const vertex1 = "Cherkasy";
-	const char * const vertex2 = "Lviv";
-	const char * const vertex3 = "Kiev";
-	const char * const vertex4 = "Amber";
-	const char * const vertexNotInGraph = "Haifa";
+	char * vertex1 = "Cherkasy";
+	char * vertex2 = "Lviv";
+	char * vertex3 = "Kiev";
+	char * vertex4 = "Amber";
+	char * vertexNotInGraph = "Haifa";
 
-	Graph graph = graphCreate(stringCopy, free, strcmp);
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, (freeGraphVertex)free);
 	ASSERT_TEST(graph != NULL);
 
 	// vertex adding
@@ -91,30 +91,30 @@ static bool graphAddDirectedEdgeTest() {
 	ASSERT_TEST(graphAddDirectedEdge(graph, NULL, vertex2) == GRAPH_NULL_ARGUMENT);
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, NULL) == GRAPH_NULL_ARGUMENT);
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertexNotInGraph) == GRAPH_VERTEX_DOES_NOT_EXISTS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertexNotInGraph));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertexNotInGraph));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertexNotInGraph, vertex1) == GRAPH_VERTEX_DOES_NOT_EXISTS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertexNotInGraph, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertexNotInGraph, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_EDGE_ALREADY_EXISTS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphRemoveDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_EDGE_ALREADY_EXISTS);
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex3) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex3));
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex3, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex3));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex3, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex1));
 
 
 	graphDestroy(graph);
@@ -123,13 +123,13 @@ static bool graphAddDirectedEdgeTest() {
 
 static bool graphIsDirectedEdgeTest() {
 	// vertices
-	const char * const vertex1 = "Cherkasy";
-	const char * const vertex2 = "Lviv";
-	const char * const vertex3 = "Kiev";
-	const char * const vertex4 = "Amber";
-	const char * const vertexNotInGraph = "Haifa";
+	char * vertex1 = "Cherkasy";
+	char * vertex2 = "Lviv";
+	char * vertex3 = "Kiev";
+	char * vertex4 = "Amber";
+	char * vertexNotInGraph = "Haifa";
 
-	Graph graph = graphCreate(stringCopy, free, strcmp);
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, (freeGraphVertex)free);
 	ASSERT_TEST(graph != NULL);
 
 	// vertex adding
@@ -146,25 +146,25 @@ static bool graphIsDirectedEdgeTest() {
 	ASSERT_TEST(!graphIsVertexExists(graph, vertexNotInGraph));
 
 	// edges
-	ASSERT_TEST(!graphIsDirectedEdge(NULL, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, NULL, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, NULL));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertexNotInGraph));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertexNotInGraph, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(NULL, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, NULL, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, NULL));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertexNotInGraph));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertexNotInGraph, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex1, vertex2) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 	ASSERT_TEST(graphRemoveDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 
 	graphClear(graph);
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex1, vertex2));
-	ASSERT_TEST(!graphIsDirectedEdge(graph, vertex2, vertex1));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex1, vertex2));
+	ASSERT_TEST(!graphIsDirectedEdgeExists(graph, vertex2, vertex1));
 
 	graphDestroy(graph);
 	return true;

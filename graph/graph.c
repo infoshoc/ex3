@@ -6,20 +6,22 @@
  */
 
 #include "set.h"
+#include "graph.h"
+#include "assert.h"
 #include <stdlib.h>
 
 typedef struct Graph_t {
-	CopyGraphVertex copyVertex;
-	CompareGraphVertex compareVertex;
-	FreeGraphVertex freeVertex;
+	copyGraphVertex copyVertex;
+	compareGraphVertex compareVertex;
+	freeGraphVertex freeVertex;
 	Set vertices;
 	Set edges;
 } Graph_t;
 
 typedef struct GraphEdge_t {
-	ConstGraph graph; // just from vertex functions
-	ConstGraphVertex from;
-	ConstGraphVertex to;
+	Graph graph; // just from vertex functions
+	GraphVertex from;
+	GraphVertex to;
 } GraphEdge_t;
 typedef const struct GraphEdge_t * const ConstGraphEdge;
 typedef struct GraphEdge_t * GraphEdge;
@@ -31,7 +33,7 @@ typedef struct GraphEdge_t * GraphEdge;
 		} \
 	} while(false)
 
-static GraphEdge graphEdgeCreate(ConstGraph graph, ConstGraphVertex from, ConstGraphVertex to) {
+static GraphEdge graphEdgeCreate(Graph graph, GraphVertex from, GraphVertex to) {
 	GraphEdge edge;
 	GRAPH_ALLOCATE(GraphEdge_t, edge, NULL);
 	edge->graph = graph;
@@ -51,11 +53,14 @@ static GraphEdge graphEdgeCreate(ConstGraph graph, ConstGraphVertex from, ConstG
 	return edge;
 }
 
-static GraphEdge graphEdgeCopy(ConstGraphEdge edge) {
+static GraphEdge graphEdgeCopy(GraphEdge edge) {
 	return graphEdgeCreate(edge->graph, edge->from, edge->to);
 }
 
 static void graphEdgeFree(GraphEdge edge) {
+	if (edge == NULL) {
+		return;
+	}
 	edge->graph->freeVertex(edge->from);
 	edge->graph->freeVertex(edge->to);
 	free(edge);
@@ -67,7 +72,7 @@ static void graphEdgeFree(GraphEdge edge) {
  * if from-vertices are equal returns negative number if first to-vertex less
  * then second, positive if first greater then second and zero if edges are equal
  */
-static int graphEdgeCompare(ConstGraphEdge edge1, ConstGraphEdge edge2) {
+static int graphEdgeCompare(GraphEdge edge1, GraphEdge edge2) {
 	assert(edge1->graph == edge2->graph);
 	int fromDifference = edge1->graph->compareVertex(edge1->from, edge2->from);
 	if (0 == fromDifference) {
@@ -76,22 +81,29 @@ static int graphEdgeCompare(ConstGraphEdge edge1, ConstGraphEdge edge2) {
 	return fromDifference;
 }
 
-Graph graphCreate(CopyGraphVertex copyVertex, CompareGraphVertex compareVertex, FreeGraphVertex freeVertex) {
+Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex) {
 	Graph graph;
 	GRAPH_ALLOCATE(Graph_t, graph, NULL);
 
 	graph->copyVertex = copyVertex;
 	graph->compareVertex = compareVertex;
+	graph->freeVertex = freeVertex;
 	graph->vertices = setCreate(copyVertex, freeVertex, compareVertex);
-	graph->edges = setCreate(graphEdgeCopy, graphEdgeFree, graphEdgeCompare);
+	graph->edges = setCreate((copySetElements)graphEdgeCopy, (freeSetElements)graphEdgeFree, (compareSetElements)graphEdgeCompare);
+
+	return graph;
 }
 
 void graphDestroy(Graph graph) {
+	if (graph == NULL) {
+		return;
+	}
 	setDestroy(graph->vertices);
 	setDestroy(graph->edges);
+	free(graph);
 }
 
-GraphResult graphAddVertex(Graph graph, ConstGraphVertex vertex) {
+GraphResult graphAddVertex(Graph graph, GraphVertex vertex) {
 	if (graph == NULL || vertex == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
@@ -106,20 +118,34 @@ GraphResult graphAddVertex(Graph graph, ConstGraphVertex vertex) {
 	return GRAPH_SUCCESS;
 }
 
-GraphResult graphRemoveVertex(Graph graph, ConstGraphVertex vertex){
+GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex){
 	if (graph == NULL || vertex == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
-	if (graphIsVertexExists(graph, vertex)==false) {
+	if (graphIsVertexExists(graph, vertex) == false) {
 		return GRAPH_VERTEX_DOES_NOT_EXISTS;
 	}
+
+	// remove vertex
 	SetResult removing = setRemove(graph->vertices, vertex);
 	assert(removing == SET_SUCCESS);
-	// TODO remove all edges connected to vertex!
+
+	// remove all adjacent edges
+	for (bool found = true; found; ) {
+		found = false;
+		SET_FOREACH(GraphEdge, edge, graph->edges) {
+			if (graph->compareVertex(edge->from, vertex) == 0 ||
+					graph->compareVertex(edge->to, vertex) == 0 ) {
+				setRemove(graph->edges, edge);
+				found = true;
+				break;
+			}
+		}
+	}
 	return GRAPH_SUCCESS;
 }
 
-bool graphIsVertexExists(ConstGraph graph, ConstGraphVertex vertex) {
+bool graphIsVertexExists(ConstGraph graph, GraphVertex vertex) {
 	if (graph == NULL || vertex == NULL) {
 		return false;
 	}
@@ -127,7 +153,7 @@ bool graphIsVertexExists(ConstGraph graph, ConstGraphVertex vertex) {
 	return setIsIn(graph->vertices, vertex);
 }
 
-GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to){
+GraphResult graphAddDirectedEdge(Graph graph, GraphVertex from, GraphVertex to){
 	if (graph == NULL || from == NULL || to == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
@@ -151,7 +177,7 @@ GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphV
 	return GRAPH_SUCCESS;
 }
 
-GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to) {
+GraphResult graphRemoveDirectedEdge(Graph graph, GraphVertex from, GraphVertex to) {
 	if (graph == NULL || from == NULL || to == NULL) {
 		return GRAPH_NULL_ARGUMENT;
 	}
@@ -168,7 +194,7 @@ GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGra
 	return GRAPH_SUCCESS;
 }
 
-bool graphIsDirectedEdgeExists(Graph graph,  ConstGraphVertex from, ConstGraphVertex to){
+bool graphIsDirectedEdgeExists(Graph graph,  GraphVertex from, GraphVertex to){
 	if (graph == NULL || from == NULL || to == NULL) {
 		return false;
 	}

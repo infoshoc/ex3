@@ -25,21 +25,20 @@ typedef enum GraphResult_t {
 } GraphResult;
 
 typedef void * GraphVertex;
-typedef const void * const ConstGraphVertex;
 
-typedef GraphVertex(*CopyGraphVertex)(ConstGraphVertex);
-typedef int(*CompareGraphVertex)(ConstGraphVertex, ConstGraphVertex);
-typedef void(*FreeGraphVertex)(ConstGraphVertex);
+typedef GraphVertex(*copyGraphVertex)(GraphVertex);
+typedef int(*compareGraphVertex)(GraphVertex, GraphVertex);
+typedef void(*freeGraphVertex)(GraphVertex);
 
-Graph graphCreate(CopyGraphVertex copyVertex, CompareGraphVertex compareVertex, FreeGraphVertex freeVertex);
+Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex);
 
 void graphDestroy(Graph graph);
-GraphResult graphAddVertex(Graph graph, ConstGraphVertex vertex);
-GraphResult graphRemoveVertex(Graph graph, ConstGraphVertex vertex);
-bool graphIsVertexExists(ConstGraph graph, ConstGraphVertex vertex);
-GraphResult graphAddDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to);
-GraphResult graphRemoveDirectedEdge(Graph graph, ConstGraphVertex from, ConstGraphVertex to);
-bool graphIsDirectedEdge(Graph graph,  ConstGraphVertex from, ConstGraphVertex to);
+GraphResult graphAddVertex(Graph graph, GraphVertex vertex);
+GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex);
+bool graphIsVertexExists(ConstGraph graph, GraphVertex vertex);
+GraphResult graphAddDirectedEdge(Graph graph, GraphVertex from, GraphVertex to);
+GraphResult graphRemoveDirectedEdge(Graph graph, GraphVertex from, GraphVertex to);
+bool graphIsDirectedEdgeExists(Graph graph,  GraphVertex from, GraphVertex to);
 GraphResult graphClear(Graph graph);
 
 #endif /* GRAPH_H_ */
