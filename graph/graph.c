@@ -9,9 +9,9 @@
 #include <stdlib.h>
 
 typedef struct Graph_t {
-	copyGraphVertex copyVertex;
-	compareGraphVertex compareVertex;
-	freeGraphVertex freeVertex;
+	CopyGraphVertex copyVertex;
+	CompareGraphVertex compareVertex;
+	FreeGraphVertex freeVertex;
 	Set vertices;
 	Set edges;
 } Graph_t;
@@ -76,7 +76,7 @@ static int graphEdgeCompare(ConstGraphEdge edge1, ConstGraphEdge edge2) {
 	return fromDifference;
 }
 
-Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex) {
+Graph graphCreate(CopyGraphVertex copyVertex, CompareGraphVertex compareVertex, FreeGraphVertex freeVertex) {
 	Graph graph;
 	GRAPH_ALLOCATE(Graph_t, graph, NULL);
 
