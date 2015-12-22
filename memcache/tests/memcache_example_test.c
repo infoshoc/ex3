@@ -77,13 +77,13 @@ static bool memCacheDestroyTest(void) {
 	// use all possible structures to detect leak
 	MemCache memcache = memCacheCreate();
 	ASSERT_NOT_NULL(memcache);
-	const int ALLOCATED_CACHE_SIZE = (1<<16);
+	const int ALLOCATED_CACHE_SIZE = (1<<10);
 	const int FREE_CACHE_SIZE = 256;
-	const int ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM = 2147516416;
+	const int ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM = (1+ALLOCATED_CACHE_SIZE)*ALLOCATED_CACHE_SIZE/2;
 	const int ALL_POSSIBLE_FREE_BLOCKS_SUM = 3341;
 	// add users
-	const char * const username1 = "LepsGena";
-	const char * const username2 = "Coldplay";
+	char * username1 = "LepsGena";
+	char * username2 = "Coldplay";
 	ASSERT_EQUAL(memCacheAddUser(memcache, username1, ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheAddUser(memcache, username2, ALL_POSSIBLE_FREE_BLOCKS_SUM), MEMCACHE_SUCCESS);
 
@@ -332,7 +332,7 @@ static bool memCacheAllocatedBlockForeachTest() {
 
 	// allocations
 	const int SIZE2ALLOCATE_LENGTH = 9;
-	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<16), (1<<16), (1<<16)};
+	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<10), (1<<10), (1<<10)};
 	void * blocks[SIZE2ALLOCATE_LENGTH];
 	int visitedTimes[SIZE2ALLOCATE_LENGTH] = {0};
 
