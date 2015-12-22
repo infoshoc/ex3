@@ -118,6 +118,14 @@ MySetElement mySetGetNext(MySet set) {
 	return set->iterator ? set->iterator->element : NULL;
 }
 
+MySetElement mySetGetCurrent(MySet set){
+	if (set == NULL ||
+		set->iterator == NULL) {
+		return NULL;
+	}
+	return set->iterator->element;
+}
+
 MySetResult mySetAdd(MySet set, MySetElement element) {
 	if (set == NULL || element == NULL) {
 		return MY_SET_NULL_ARGUMENT;
@@ -153,6 +161,19 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 	}
 	return MY_SET_SUCCESS;
 }
+
+MySetResult mySetRemove(MySet set, MySetElement element){
+	if (set==NULL){
+		return MY_SET_NULL_ARGUMENT;
+	}
+	if (!mySetIsIn(set, element)){
+		return MY_SET_ITEM_DOES_NOT_EXIST;
+	}
+	MySetElement elementFound = mySetExtract(set, element);
+	set->freeElement(elementFound);
+	return MY_SET_SUCCESS;
+}
+
 
 MySetElement mySetExtract(MySet set, MySetElement element) {
 	if (set == NULL || !mySetIsIn(set, element)) {
