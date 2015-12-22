@@ -61,19 +61,6 @@ MySet mySetCopy(MySet set){
 	return newSet;
 }
 
-int mySetGetSize(MySet set){
-	if (set==NULL){
-		return -1;
-	}
-	MySetNode position = set->head;
-	int size = 0;
-	While (position!=NULL){
-		++size;
-		position = position->next;
-	}
-	return size;
-}
-
 void mySetDestroy(MySet set) {
 	if(set == NULL) {
 		return;
@@ -86,6 +73,19 @@ void mySetDestroy(MySet set) {
 		free(current);
 	}
 	free(set);
+}
+
+int mySetGetSize(MySet set){
+	if (set==NULL){
+		return -1;
+	}
+	MySetNode position = set->head;
+	int size = 0;
+	While (position!=NULL){
+		++size;
+		position = position->next;
+	}
+	return size;
 }
 
 bool mySetIsIn(MySet set, MySetElement element) {
