@@ -115,7 +115,7 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 
 /**
  * Allocates block of memory of size for username (if he didn't exceed  limit)
- * and returns it's address
+ * and returns it's address. Position of iterator is undefined
  *
  * @param memcache - used memory management system
  * @param username - name of user
@@ -126,7 +126,7 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 void* memCacheAllocate(MemCache memcache, char* username, int size);
 
 /**
- * Releases block ptr
+ * Releases the memory block. Position of iterator is undefined.
  *
  * @param memcache - used memory management system
  * @param username - name of user

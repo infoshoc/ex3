@@ -35,7 +35,7 @@ static int compareStrings(CacheElement element1, CacheElement element2) {
 
 /** Function to compute the key for an element in the cache */
 static int getFirstLetter(CacheElement element) {
-  return *(char*)element;
+  return *(unsigned char*)element;
 }
 
 bool testCacheExample() {
@@ -76,10 +76,10 @@ bool testCacheExample() {
 
 static bool testCachePush() {
 	//strings
-	const char * const toFirstCell = "";
-	const char * const ramones = "Ramones";
-	const char * const toLastCell = {(char)254, '\0'};
-	const char * const outOfRange = {(char)255, '\0'};
+	char * toFirstCell = "";
+	char * ramones = "Ramones";
+	char toLastCell[] = {(char)254, '\0'};
+	char outOfRange[] = {(char)255, '\0'};
 
 	Cache cache = cacheCreate(255, freeString, copyString, compareStrings, getFirstLetter);
 	ASSERT_TEST(cache != NULL);
@@ -123,9 +123,9 @@ static bool testCachePush() {
 }
 
 static bool testCacheExtractElementByKey() {
-	const char * const andykaufman = "andykaufman";
-	const char * const agonist = "agonist";
-	const char * const nightwish = "nightwish";
+	char * andykaufman = "andykaufman";
+	char * agonist = "agonist";
+	char * nightwish = "nightwish";
 
 	Cache cache = cacheCreate(256, freeString, copyString, compareStrings, getFirstLetter);
 	ASSERT_TEST(cache != NULL);
@@ -150,14 +150,13 @@ static bool testCacheExtractElementByKey() {
 	}
 	ASSERT_TEST(i == SIZE);
 
-	const char * const ex1 = cacheExtractElementByKey(cache, getFirstLetter(andykaufman));
-	const char * const ex2 = cacheExtractElementByKey(cache, getFirstLetter(agonist));
+	char * ex1 = cacheExtractElementByKey(cache, getFirstLetter(andykaufman));
+	char * ex2 = cacheExtractElementByKey(cache, getFirstLetter(agonist));
 	ASSERT_TEST((ex1 == elements[0] && ex2 == elements[1]) ||
 			(ex2 == elements[0] && ex1 == elements[1]));
-	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(agonist) == elements[0]));
-	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish) == elements[1]));
-	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(andykaufman) == NULL));
-	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish) == NULL));
+	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish)) == elements[2]);
+	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(andykaufman)) == NULL);
+	ASSERT_TEST(cacheExtractElementByKey(cache, getFirstLetter(nightwish)) == NULL);
 
 	free(elements[0]);
 	free(elements[1]);
@@ -193,10 +192,10 @@ static bool testCacheForeach() {
 	Cache cache = cacheCreate(BASE, freeInt, copyInt, compareInt, getLastDigit);
 	ASSERT_TEST(cache != NULL);
 
-	const int ELEMENTS = 100;
-	int counted[ELEMENTS] = {};
+#define TEST_CACHE_FOREACH_ELEMENTS 100
+	int counted[TEST_CACHE_FOREACH_ELEMENTS] = {0};
 
-	for (int i = 0; i < ELEMENTS; ++i) {
+	for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
 		ASSERT_TEST(cachePush(cache, &i) == CACHE_SUCCESS);
 		ASSERT_TEST(cachePush(cache, &i) == CACHE_ITEM_ALREADY_EXISTS);
 		ASSERT_TEST(cacheIsIn(cache, &i));
@@ -208,13 +207,13 @@ static bool testCacheForeach() {
 		}
 
 		//should not influence iterator
-		for (int i = 0; i < ELEMENTS; ++i) {
+		for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
 			ASSERT_TEST(cacheIsIn(cache, &i));
 		}
 	}
 
 
-	for (int i = 0; i < ELEMENTS; ++i) {
+	for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
 		ASSERT_TEST(counted[i] == 1);
 	}
 

@@ -38,7 +38,7 @@ typedef void *MemCacheBlock;
 typedef const void* const ConstMemCacheBlock;
 
 typedef char *MemCacheUser;
-typedef const char ConstMemCacheUser[MEMCACHE_USER_NAME_LENGTH+1];
+typedef const char *ConstMemCacheUser;
 typedef int *MemCacheLimit;
 typedef const int * const ConstMemCacheLimit;
 
@@ -54,18 +54,24 @@ static void memcacheDoNothing(MemCacheBlock block){}
 static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
 	return block;
 }
-static int memcacheBlocksCompare(MemCacheBlock a, MemCacheBlock b) {
+static int memcacheBlocksCompare(MemCacheBlock block1, MemCacheBlock block2) {
 	// in order to escape overflow in difference
-	return (uintptr_t)a < (uintptr_t)b ? -1 : (uintptr_t*)a == (uintptr_t*)b ? 0 : 1;
+	return (uintptr_t)block1 < (uintptr_t)block2 ? -1 : (uintptr_t*)block1 == (uintptr_t*)block2 ? 0 : 1;
+}
+static void memcacheFreeBlock(MemCacheBlock block) {
+	free((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
 }
 static inline int memcacheBlockGetSize(MemCacheBlock block) {
 	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-sizeof(int));
 }
+static inline void* memcacheBlockGetModePointer(MemCacheBlock block) {
+	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH-1;
+}
 static inline MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
-	return *((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1);
+	return *(char*)memcacheBlockGetModePointer(block);
 }
 /** Function returns owner of block (NOT COPY) */
-static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
+static MemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
@@ -85,8 +91,10 @@ static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 }
 static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
 	assert(memcacheIsUserNameLegal(user));
-	MemCacheUser copy;
-	MEMCACHE_ALLOCATE(ConstMemCacheUser, copy, NULL);
+	MemCacheUser copy = malloc(strlen(user)+1);
+	if (copy == NULL) {
+		return NULL;
+	}
 
 	strcpy(copy, user);
 	return copy;
@@ -109,7 +117,7 @@ static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
 static void memcacheLimitFree(MemCacheLimit limit) {
 	free(limit);
 }
-static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
+static bool memcacheIsUserExists(MemCache memcache, MemCacheUser user) {
 	assert(memcache != NULL);
 	if (!memcacheIsUserNameLegal(user)) {
 		return false;
@@ -120,7 +128,7 @@ static bool memcacheIsUserExists(MemCache memcache, ConstMemCacheUser user) {
 	return mapContains(memcache->userMemoryLimit, user);
 }
 
-static void memcacheIncreaseUserLimit(MemCache memcache, ConstMemCacheUser user, const int inc) {
+static void memcacheIncreaseUserLimit(MemCache memcache, MemCacheUser user, const int inc) {
 	assert(memcache != NULL);
 	assert(memcacheIsUserNameLegal(user));
 	assert(memcacheIsUserExists(memcache, user));
@@ -152,16 +160,16 @@ MemCache memCacheCreate() {
 			memcacheAllocatedBlockComputeKey);
 
 	memcache->userRelations = graphCreate(
-			memcacheUserCopy,
-			memcacheUsersCompare,
-			memcacheUserFree);
+			(copyGraphVertex)memcacheUserCopy,
+			(compareGraphVertex)memcacheUsersCompare,
+			(freeGraphVertex)memcacheUserFree);
 
 	memcache->userMemoryLimit = mapCreate(
-			memcacheLimitCopy,
-			memcacheUserCopy,
-			memcacheLimitFree,
-			memcacheUserFree,
-			memcacheUsersCompare);
+			(copyMapDataElements)memcacheLimitCopy,
+			(copyMapKeyElements) memcacheUserCopy,
+			(freeMapDataElements)memcacheLimitFree,
+			(freeMapKeyElements)memcacheUserFree,
+			(compareMapKeyElements)memcacheUsersCompare);
 
 	memcache->allAllocatedBlocks = setCreate(
 			memcacheBlockCopy,
@@ -190,13 +198,16 @@ MemCache memCacheCreate() {
 }
 
 void memCacheDestroy(MemCache memcache){
+	// release everything
+	memCacheReset(memcache);
+	//destroyers
 	cacheDestroy(memcache->freeBlocks);
 	cacheDestroy(memcache->allocatedBlocks);
 	graphDestroy(memcache->userRelations);
 	mapDestroy(memcache->userMemoryLimit);
 	setDestroy(memcache->allAllocatedBlocks);
 	setDestroy(memcache->allFreeBlocks);
-	memcache = NULL;
+	free(memcache);
 }
 
 MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
@@ -241,12 +252,10 @@ MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, 
 	if (!setIsIn(memcache->allAllocatedBlocks, ptr)){
 		return MEMCACHE_BLOCK_NOT_ALLOCATED;
 	}
-	if (memcacheBlockGetOwner(ptr) != username){
+	if (strcmp(memcacheBlockGetOwner(ptr),username) != 0){
 		return MEMCACHE_PERMISSION_DENIED;
 	}
-	if (mod !='U'
-			&& mod != 'A'
-					&& mod != 'G'){
+	if (mod != USER && mod != ALL && mod != GROUP){
 		return MEMCACHE_INVALID_ARGUMENT;
 	}
 	*((char*)ptr-2-MEMCACHE_USER_NAME_LENGTH-1) = mod;
@@ -285,11 +294,12 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 		!memcacheIsUserExists(memcache, username2)) {
 		return MEMCACHE_USER_NOT_FOUND;
 	}
-	GrarhResult removingEdge = graphRemoveDirectedEdge(memcache->userRelations, username1, username2);
+
+	GraphResult removingEdge = graphRemoveDirectedEdge(memcache->userRelations, username1, username2);
 	if (removingEdge == GRAPH_OUT_OF_MEMORY){
 		return MEMCACHE_OUT_OF_MEMORY;
 	}
-	assert(removingEdge == GRAPH_SUCCESS);
+	assert(removingEdge == GRAPH_SUCCESS || removingEdge == GRAPH_EDGE_DOES_NOT_EXISTS);
 	return MEMCACHE_SUCCESS;
 }
 
@@ -324,7 +334,7 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 		return MEMCACHE_BLOCK_NOT_ALLOCATED;
 	}
 	ConstMemCacheBlockMode mode = memcacheBlockGetMode(ptr);
-	ConstMemCacheUser owner = memcacheBlockGetOwner(ptr);
+	MemCacheUser owner = memcacheBlockGetOwner(ptr);
 	switch (mode) {
 	case USER:
 		if (0 != memcacheUsersCompare(username, owner)) {
@@ -333,19 +343,19 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 		break;
 	case GROUP:
 		if (0 != memcacheUsersCompare(username, owner) &&
-				!graphIsDirectedEdge(memcache->userRelations, owner, username)) {
+				!graphIsDirectedEdgeExists(memcache->userRelations, owner, username)) {
 			return MEMCACHE_PERMISSION_DENIED;
 		}
 		break;
 	case ALL:
-		// nothing special to do
+		// nothing special to check
 		break;
 	default:
 		assert(false);
 	}
 
 	int blockSize = memcacheBlockGetSize(ptr);
-	memcacheIncreaseUserLimit(owner, blockSize);
+	memcacheIncreaseUserLimit(memcache, owner, blockSize);
 	if (blockSize > MEMCACHE_FREE_BLOCK_MAX_SIZE) {
 		// release without removing from cache
 		memcacheFreeBlock(ptr);
@@ -413,15 +423,29 @@ static CacheResult memCacheClearBlockCache(Cache cache, int size) {
 	return cacheClear(cache);
 }
 
-void memCacheReset(MemCache memcache) {
-	graphClear(memcache->userRelations);
-	mapClear(memcache->userMemoryLimit);
+MemCachResult memCacheReset(MemCache memcache) {
+	if (memcache == NULL) {
+		return MEMCACHE_NULL_ARGUMENT;
+	}
+
+	GraphResult graphClearResult = graphClear(memcache->userRelations);
+	assert(graphClearResult == GRAPH_SUCCESS);
+	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
+	assert(mapClearResult == MAP_SUCCESS);
 
 	// remove without releasing
-	setClear(memcache->allAllocatedBlocks);
-	setClear(memcache->allFreeBlocks);
+	SetResult allocatedSetClearResult = setClear(memcache->allAllocatedBlocks);
+	assert(allocatedSetClearResult == SET_SUCCESS);
+	SetResult freeSetClearResult = setClear(memcache->allFreeBlocks);
+	assert(freeSetClearResult == SET_SUCCESS);
 
 	// remove and release all blocks
-	memCacheClearBlockCache(memcache->allocatedBlocks, MEMCACHE_ALLOCATED_BLOCK_MODULO);
-	memCacheClearBlockCache(memcache->freeBlocks, MEMCACHE_FREE_BLOCK_MAX_SIZE);
+	CacheResult allocatedCacheClear =
+		memCacheClearBlockCache(memcache->allocatedBlocks, MEMCACHE_ALLOCATED_BLOCK_MODULO);
+	assert(allocatedCacheClear == CACHE_SUCCESS);
+	CacheResult freeCacheClear =
+			memCacheClearBlockCache(memcache->freeBlocks, MEMCACHE_FREE_BLOCK_MAX_SIZE);
+	assert(freeCacheClear == CACHE_SUCCESS);
+
+	return MEMCACHE_SUCCESS;
 }

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CACHE_INVALID_ITERATOR_INDEX 1
+#define CACHE_INVALID_ITERATOR_INDEX (-1)
 typedef struct cache_t {
 	ComputeCacheKey computeKey;
 	Set *container;
@@ -47,6 +47,7 @@ Cache cacheCreate(
 	CACHE_ALLOCATE(cache_t, cache, NULL);
 
 	//initialization
+	cache->computeKey = compute_key;
 	cache->cache_size = size;
 	cache->iteratorIndex = CACHE_INVALID_ITERATOR_INDEX;
 	cache->container = (Set*)malloc(sizeof(*cache->container) * size);
@@ -65,7 +66,6 @@ Cache cacheCreate(
 }
 
 CacheResult cachePush(Cache cache, CacheElement element) {
-	// TODO make generic
 	if (cache == NULL || element == NULL) {
 		return CACHE_NULL_ARGUMENT;
 	}
@@ -73,6 +73,10 @@ CacheResult cachePush(Cache cache, CacheElement element) {
 	int cellIndex = cache->computeKey(element);
 	if (!cacheIsKeyCorrect(cache, cellIndex)) {
 		return CACHE_OUT_OF_RANGE;
+	}
+
+	if (cacheIsIn(cache, element)) {
+		return CACHE_ITEM_ALREADY_EXISTS;
 	}
 
 	if (setAdd(cache->container[cellIndex], element) == SET_OUT_OF_MEMORY) {
@@ -100,24 +104,18 @@ CacheResult cacheFreeElement(Cache cache, CacheElement element) {
 }
 
 CacheElement cacheExtractElementByKey(Cache cache, int key){
-//CacheResult cacheGet(Cache cache, int index, CacheElement element) {
 	if (cache == NULL) {
 		return NULL;
 	}
 
-	//int cellIndex = cache->computeKey(element);//cacheGetCellIndexForOrangeSize(index);
 	if (!cacheIsKeyCorrect(cache, key)) {
-		return CACHE_OUT_OF_RANGE;
+		return NULL;
 	}
 
 	if (setGetSize(cache->container[key]) == 0) {
 		return NULL;
 	}
 	CacheElement result = setExtract(cache->container[key], setGetFirst(cache->container[key]));
-	//if ((result = orangeCopy(listGetFirst(cache->container[cellIndex]))) == NULL) {
-	//	return CACHE_OUT_OF_MEMORY;
-	//}
-	//cacheFreeOrange(cache, index);
 	return result;
 }
 
@@ -136,13 +134,13 @@ bool cacheIsIn(Cache cache, CacheElement element) {
 
 Set cacheGetFirst(Cache cache) {
 	assert(cache != NULL);
-	cache->iteratorIndex = cache->container[0];
-	return cache->iteratorIndex;
+	cache->iteratorIndex = 0;
+	return cache->container[cache->iteratorIndex];
 }
 
 Set cacheGetNext(Cache cache) {
 	if (cache == NULL ||
-			cache->iteratorIndex == cacheGetNext) {
+			cache->iteratorIndex == CACHE_INVALID_ITERATOR_INDEX) {
 		return NULL;
 	}
 
@@ -159,7 +157,7 @@ Set cacheGetCurrent(Cache cache) {
 	if (cache == NULL){
 		return NULL;
 	}
-	return cache->iteratorIndex;
+	return cache->container[cache->iteratorIndex];
 }
 
 CacheResult cacheClear(Cache cache) {
@@ -181,7 +179,7 @@ void cacheDestroy(Cache cache) {
 	}
 
 	for (int i = 0; i < cache->cache_size; ++i) {
-		listDestroy(cache->container[i]);
+		setDestroy(cache->container[i]);
 	}
 	free(cache->container);
 	free(cache);
