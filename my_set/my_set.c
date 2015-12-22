@@ -7,8 +7,6 @@ typedef struct MySetNode_t {
 	struct MySetNode_t *next;
 } *MySetNode, MySetNode_t;
 
-
-
 typedef struct MySet_t {
 	copyMySetElements copyElement;
 	freeMySetElements freeElement;
@@ -41,6 +39,28 @@ MySet mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, 
 	return set;
 }
 
+MySet mySetCopy(MySet set){
+	if (set == NULL){
+		return NULL;
+	}
+	MySet newSet = mySetCreate(set->copyElement, set->freeElement,
+			set->compareElements);
+	if (newSet == NULL) {
+		return NULL;
+	}
+
+	for (MySetNode current = set->head; current != NULL; current = current->next){
+		MySetResult adding = mySetAdd(newSet, current->element);
+		if (adding == MY_SET_OUT_OF_MEMORY){
+			mySetDestroy(newSet);
+			return NULL;
+		}
+		assert(adding == MY_SET_SUCCESS);
+	}
+
+	return newSet;
+}
+
 void mySetDestroy(MySet set) {
 	if(set == NULL) {
 		return;
@@ -53,6 +73,19 @@ void mySetDestroy(MySet set) {
 		free(current);
 	}
 	free(set);
+}
+
+int mySetGetSize(MySet set){
+	if (set==NULL){
+		return -1;
+	}
+	MySetNode position = set->head;
+	int size = 0;
+	while (position!=NULL){
+		++size;
+		position = position->next;
+	}
+	return size;
 }
 
 bool mySetIsIn(MySet set, MySetElement element) {
@@ -68,13 +101,26 @@ bool mySetIsIn(MySet set, MySetElement element) {
 	return false;
 }
 
+MySetElement mySetGetFirst(MySet set){
+	if (set==NULL){
+		return NULL;
+	}
+	set->iterator = set->head;
+	return set->iterator ? set->iterator->element : NULL;
+}
+
 MySetElement mySetGetNext(MySet set) {
 	if (set == NULL ||
 			set->iterator == NULL) {
 		return NULL;
 	}
 	set->iterator = set->iterator->next;
-	if (set->iterator == NULL) {
+	return set->iterator ? set->iterator->element : NULL;
+}
+
+MySetElement mySetGetCurrent(MySet set){
+	if (set == NULL ||
+		set->iterator == NULL) {
 		return NULL;
 	}
 	return set->iterator->element;
@@ -96,25 +142,40 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 		return MY_SET_OUT_OF_MEMORY;
 	}
 
-	if (set->head == NULL) {
-		// if set is empty
+	if (set->head == NULL || set->compareElements(set->head->element, element) > 0) {
+		//need to push front
+		node->next = set->head;
 		set->head = node;
-		set->head->next = NULL;
 	} else {
 		assert(set->head != NULL);
-		// find last position where element is lower then outs or last element
+		assert(set->compareElements(set->head->element, element) < 0);
+		// find last position where element is lower then ours or last element
 		MySetNode position;
 		for (position = set->head;
 				position->next != NULL &&
 						set->compareElements(position->next->element, element) < 0;
 				position = position->next);
 		assert(position != NULL);
+		assert(position->next == NULL || set->compareElements(position->next->element, element) > 0);
 		// insert after position
 		node->next = position->next;
 		position->next = node;
 	}
 	return MY_SET_SUCCESS;
 }
+
+MySetResult mySetRemove(MySet set, MySetElement element){
+	if (set==NULL || element == NULL){
+		return MY_SET_NULL_ARGUMENT;
+	}
+	if (!mySetIsIn(set, element)){
+		return MY_SET_ITEM_DOES_NOT_EXIST;
+	}
+	MySetElement elementFound = mySetExtract(set, element);
+	set->freeElement(elementFound);
+	return MY_SET_SUCCESS;
+}
+
 
 MySetElement mySetExtract(MySet set, MySetElement element) {
 	if (set == NULL || !mySetIsIn(set, element)) {
@@ -123,8 +184,9 @@ MySetElement mySetExtract(MySet set, MySetElement element) {
 
 	assert(set->head != NULL);
 	MySetElement result;
-	MySetNode node;
-	if (set->compareElements(set->head->element, element)) {
+	MySetNode node; // node we want to deallocate
+	if (set->compareElements(set->head->element, element) == 0) {
+		// pop front
 		result = set->head->element;
 		node = set->head;
 		// extracting
@@ -136,15 +198,36 @@ MySetElement mySetExtract(MySet set, MySetElement element) {
 				position = position->next);
 
 		assert(position->next != NULL && set->compareElements(position->next->element, element) == 0);
-		result = position->element;
-		node = position->next;
-		// extracting
-		position->element = position->next->element;
-		position->next = position->next->next;
+		result = position->next->element;
+		if (position->next->next == NULL) {
+			node = position->next;
+			// extracting
+			position->next = NULL;
+		} else {
+			position = position->next;
+			node = position->next;
+			// extracting
+			assert(position->next != NULL);
+			position->element = position->next->element;
+			position->next = position->next->next;
+		}
 
 	}
 	free(node);
 	return result;
+}
+
+MySetResult mySetClear(MySet set){
+	if (set==NULL){
+		return MY_SET_NULL_ARGUMENT;
+	}
+	MySetElement clearElement = mySetGetFirst(set);
+	while (clearElement != NULL){
+		MySetResult clearing = mySetRemove(set, clearElement);
+		assert(clearing == MY_SET_SUCCESS);
+		clearElement = mySetGetFirst(set);
+	}
+	return MY_SET_SUCCESS;
 }
 
 MySet mySetFilter(MySet set, logicalCondition condition) {

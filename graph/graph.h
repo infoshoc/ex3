@@ -98,7 +98,7 @@ void graphDestroy(Graph graph);
 GraphResult graphAddVertex(Graph graph, GraphVertex vertex);
 
 /**
- * graphRemoveVertex: Removes a vertex and all adjacent edges from the graph. The vertex is found
+ * graphRemoveVertex: Removes a vertex and all incident edges from the graph. The vertex is found
  * using the comparison function given at initialization. Once found, the element
  * is removed and deallocated using the free function.
  *
