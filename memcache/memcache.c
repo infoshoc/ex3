@@ -56,7 +56,7 @@ static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
 }
 static int memcacheBlocksCompare(MemCacheBlock a, MemCacheBlock b) {
 	// in order to escape overflow in difference
-	return (char*)a < (char*)b ? -1 : (char*)a == (char*)b ? 0 : 1;
+	return (uintptr_t)a < (uintptr_t)b ? -1 : (uintptr_t*)a == (uintptr_t*)b ? 0 : 1;
 }
 static inline int memcacheBlockGetSize(MemCacheBlock block) {
 	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-sizeof(int));
@@ -69,7 +69,7 @@ static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
-	return block % MEMCACHE_ALLOCATED_BLOCK_MODULO;
+	return (uintptr_t)block % MEMCACHE_ALLOCATED_BLOCK_MODULO;
 }
 static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
 	return memcacheBlockGetSize(block)-1;
