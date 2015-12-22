@@ -68,10 +68,10 @@ static inline void* memcacheBlockGetModePointer(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH-1;
 }
 static inline MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
-	return *(char*)memcacheBlockGetModePointer;
+	return *(char*)memcacheBlockGetModePointer(block);
 }
 /** Function returns owner of block (NOT COPY) */
-static ConstMemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
+static MemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
 static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
@@ -128,7 +128,7 @@ static bool memcacheIsUserExists(MemCache memcache, MemCacheUser user) {
 	return mapContains(memcache->userMemoryLimit, user);
 }
 
-static void memcacheIncreaseUserLimit(MemCache memcache, ConstMemCacheUser user, const int inc) {
+static void memcacheIncreaseUserLimit(MemCache memcache, MemCacheUser user, const int inc) {
 	assert(memcache != NULL);
 	assert(memcacheIsUserNameLegal(user));
 	assert(memcacheIsUserExists(memcache, user));
@@ -306,8 +306,7 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 }
 
 void* memCacheAllocate(MemCache memcache, char* username, int size){
-	MEMCACHE_ALLOCATE(type, var, NULL);
-
+	//TODO
 }
 
 MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
@@ -323,7 +322,7 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 		return MEMCACHE_BLOCK_NOT_ALLOCATED;
 	}
 	ConstMemCacheBlockMode mode = memcacheBlockGetMode(ptr);
-	ConstMemCacheUser owner = memcacheBlockGetOwner(ptr);
+	MemCacheUser owner = memcacheBlockGetOwner(ptr);
 	switch (mode) {
 	case USER:
 		if (0 != memcacheUsersCompare(username, owner)) {
@@ -420,7 +419,7 @@ MemCachResult memCacheReset(MemCache memcache) {
 	GraphResult graphClearResult = graphClear(memcache->userRelations);
 	assert(graphClearResult == GRAPH_SUCCESS);
 	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
-	assert(mapClearResult == GRAPH_SUCCESS);
+	assert(mapClearResult == MAP_SUCCESS);
 
 	// remove without releasing
 	SetResult allocatedSetClearResult = setClear(memcache->allAllocatedBlocks);
