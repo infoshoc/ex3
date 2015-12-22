@@ -167,7 +167,7 @@ static bool testMySetGetSize() {
 	ASSERT_TEST(mySetAdd(copy, one) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetGetSize(copy) == 2);
 	int *extracted = mySetExtract(copy, two);
-	ASSERT_TEST(extracted != NULL && *extracted == 1);
+	ASSERT_TEST(extracted != NULL && *extracted == 2);
 	ASSERT_TEST(mySetGetSize(copy) == 1);
 	ASSERT_TEST(mySetClear(copy) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetGetSize(copy) == 0);
@@ -204,6 +204,7 @@ static bool testMySetForeach() {
 	ASSERT_TEST(mySetAdd(set, values[1]) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetGetSize(set) == VALUES_NUMBER);
 	ASSERT_TEST(mySetRemove(set, values[0]) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetRemove(set, values[0]) == MY_SET_ITEM_DOES_NOT_EXIST);
 	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_ITEM_ALREADY_EXISTS);
@@ -215,7 +216,7 @@ static bool testMySetForeach() {
 
 		//check consistency
 		mySetDestroy(mySetCopy(set));
-		ASSERT_TEST(mySetGetSize(set) == VALUES_NUMBER);
+		ASSERT_TEST(mySetGetSize(set) == VALUES_NUMBER-1);
 		ASSERT_TEST(mySetIsIn(set, values[index]));
 		mySetDestroy(mySetFilter(set, oddIntFilter));
 		ASSERT_TEST(compareInt(mySetGetCurrent(set), values[index]) == 0);
