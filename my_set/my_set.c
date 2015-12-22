@@ -206,6 +206,19 @@ MySetElement mySetExtract(MySet set, MySetElement element) {
 	return result;
 }
 
+MySetResult mySetClear(MySet set){
+	if (set==NULL){
+		return MY_SET_NULL_ARGUMENT;
+	}
+	MySetElement clearElement = mySetGetFirst(set);
+	while (clearElement != NULL){
+		MySetResult clearing = mySetRemove(set, clearElement);
+		assert(clearing == MY_SET_SUCCESS);
+		clearElement = mySetGetFirst(set);
+	}
+	return MY_SET_SUCCESS;
+}
+
 MySet mySetFilter(MySet set, logicalCondition condition) {
 	if (set == NULL || condition == NULL) {
 		return NULL;
