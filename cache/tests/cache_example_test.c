@@ -193,7 +193,7 @@ static bool testCacheForeach() {
 	ASSERT_TEST(cache != NULL);
 
 #define TEST_CACHE_FOREACH_ELEMENTS 100
-	int counted[TEST_CACHE_FOREACH_ELEMENTS] = {};
+	int counted[TEST_CACHE_FOREACH_ELEMENTS] = {0};
 
 	for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
 		ASSERT_TEST(cachePush(cache, &i) == CACHE_SUCCESS);
