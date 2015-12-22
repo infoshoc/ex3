@@ -67,15 +67,15 @@ Cache cacheCreate(
 CacheResult cachePush(Cache cache, CacheElement element) {
 	// TODO make generic
 	if (cache == NULL || element == NULL) {
-		return CACHE_ILLEGAL_ARGUMENT;
+		return CACHE_NULL_ARGUMENT;
 	}
 
-	int cellIndex = computeKey(element);
+	int cellIndex = cache->computeKey(element);
 	if (!cacheIsKeyCorrect(cache, cellIndex)) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
-	if (listInsertFirst(cache->container[cellIndex], element) == LIST_OUT_OF_MEMORY) {
+	if (setAdd(cache->container[cellIndex], element) == SET_OUT_OF_MEMORY) {
 		return CACHE_OUT_OF_MEMORY;
 	}
 
@@ -99,25 +99,26 @@ CacheResult cacheFreeElement(Cache cache, CacheElement element) {
 	return CACHE_SUCCESS;
 }
 
-CacheResult cacheGet(Cache cache, int index, Orange* org) {
+CacheElement cacheExtractElementByKey(Cache cache, int key){
+//CacheResult cacheGet(Cache cache, int index, CacheElement element) {
 	if (cache == NULL) {
-		return CACHE_ILLEGAL_ARGUMENT;
+		return NULL;
 	}
 
-	int cellIndex = cacheGetCellIndexForOrangeSize(index);
-	if (!isCellIndexCorrect(cache, cellIndex)) {
+	//int cellIndex = cache->computeKey(element);//cacheGetCellIndexForOrangeSize(index);
+	if (!cacheIsKeyCorrect(cache, key)) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
-	if (listGetSize(cache->container[cellIndex]) == 0) {
-		return CACHE_NO_ELEMENTS_IN_CELL;
+	if (setGetSize(cache->container[key]) == 0) {
+		return NULL;
 	}
-
-	if ((*org = orangeCopy(listGetFirst(cache->container[cellIndex]))) == NULL) {
-		return CACHE_OUT_OF_MEMORY;
-	}
-	cacheFreeOrange(cache, index);
-	return CACHE_SUCCESS;
+	CacheElement result = setExtract(cache->container[key], element);
+	//if ((result = orangeCopy(listGetFirst(cache->container[cellIndex]))) == NULL) {
+	//	return CACHE_OUT_OF_MEMORY;
+	//}
+	//cacheFreeOrange(cache, index);
+	return result;
 }
 
 bool cacheIsIn(Cache cache, CacheElement element) {
@@ -133,10 +134,10 @@ bool cacheIsIn(Cache cache, CacheElement element) {
 	return setIsIn(cache->container[key], element);
 }
 
-List cacheGetFirst(Cache cache) {
+Set cacheGetFirst(Cache cache) {
 	assert(cache != NULL);
-	cache->iterator = cache->container[0];
-	return cache->iterator;
+	cache->iteratorIndex = cache->container[0];
+	return cache->iteratorIndex;
 }
 
 Set cacheGetNext(Cache cache) {
@@ -154,11 +155,11 @@ Set cacheGetNext(Cache cache) {
 	return cache->container[cache->iteratorIndex];
 }
 
-List cacheGetCurrent(Cache cache) {
+Set cacheGetCurrent(Cache cache) {
 	if (cache == NULL){
 		return NULL;
 	}
-	return cache->iterator;
+	return cache->iteratorIndex;
 }
 
 CacheResult cacheClear(Cache cache) {
