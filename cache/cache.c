@@ -65,7 +65,6 @@ Cache cacheCreate(
 }
 
 CacheResult cachePush(Cache cache, CacheElement element) {
-	// TODO make generic
 	if (cache == NULL || element == NULL) {
 		return CACHE_NULL_ARGUMENT;
 	}
@@ -75,7 +74,9 @@ CacheResult cachePush(Cache cache, CacheElement element) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
-	// TODO exists
+	if (cacheIsIn(cache, element)) {
+		return CACHE_ITEM_ALREADY_EXISTS;
+	}
 
 	if (setAdd(cache->container[cellIndex], element) == SET_OUT_OF_MEMORY) {
 		return CACHE_OUT_OF_MEMORY;
