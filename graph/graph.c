@@ -137,7 +137,7 @@ GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex){
 	SetResult removing = setRemove(graph->vertices, vertex);
 	assert(removing == SET_SUCCESS);
 
-	// remove all adjacent edges
+	// remove all incident edges
 	for (bool found = true; found; ) {
 		found = false;
 		SET_FOREACH(GraphEdge, edge, graph->edges) {
