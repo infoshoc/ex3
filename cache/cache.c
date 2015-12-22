@@ -75,6 +75,8 @@ CacheResult cachePush(Cache cache, CacheElement element) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
+	// TODO exists
+
 	if (setAdd(cache->container[cellIndex], element) == SET_OUT_OF_MEMORY) {
 		return CACHE_OUT_OF_MEMORY;
 	}
@@ -107,14 +109,13 @@ CacheElement cacheExtractElementByKey(Cache cache, int key){
 
 	//int cellIndex = cache->computeKey(element);//cacheGetCellIndexForOrangeSize(index);
 	if (!cacheIsKeyCorrect(cache, key)) {
-		return CACHE_OUT_OF_RANGE;
+		return NULL;
 	}
 
 	if (setGetSize(cache->container[key]) == 0) {
 		return NULL;
 	}
 	CacheElement result = setExtract(cache->container[key], element);
-	//if ((result = orangeCopy(listGetFirst(cache->container[cellIndex]))) == NULL) {
 	//	return CACHE_OUT_OF_MEMORY;
 	//}
 	//cacheFreeOrange(cache, index);
@@ -136,13 +137,13 @@ bool cacheIsIn(Cache cache, CacheElement element) {
 
 Set cacheGetFirst(Cache cache) {
 	assert(cache != NULL);
-	cache->iteratorIndex = cache->container[0];
-	return cache->iteratorIndex;
+	cache->iteratorIndex = 0;
+	return cache->container[cache->iteratorIndex];
 }
 
 Set cacheGetNext(Cache cache) {
 	if (cache == NULL ||
-			cache->iteratorIndex == cacheGetNext) {
+			cache->iteratorIndex == CACHE_INVALID_ITERATOR_INDEX) {
 		return NULL;
 	}
 
@@ -159,7 +160,7 @@ Set cacheGetCurrent(Cache cache) {
 	if (cache == NULL){
 		return NULL;
 	}
-	return cache->iteratorIndex;
+	return cache->container[cache->iteratorIndex];
 }
 
 CacheResult cacheClear(Cache cache) {
@@ -181,7 +182,7 @@ void cacheDestroy(Cache cache) {
 	}
 
 	for (int i = 0; i < cache->cache_size; ++i) {
-		listDestroy(cache->container[i]);
+		setDestroy(cache->container[i]);
 	}
 	free(cache->container);
 	free(cache);
