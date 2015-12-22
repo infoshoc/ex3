@@ -113,7 +113,7 @@ CacheElement cacheExtractElementByKey(Cache cache, int key){
 	if (setGetSize(cache->container[key]) == 0) {
 		return NULL;
 	}
-	CacheElement result = setExtract(cache->container[key], element);
+	CacheElement result = setExtract(cache->container[key], setGetFirst(cache->container[key]));
 	//if ((result = orangeCopy(listGetFirst(cache->container[cellIndex]))) == NULL) {
 	//	return CACHE_OUT_OF_MEMORY;
 	//}
