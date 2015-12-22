@@ -101,6 +101,14 @@ bool mySetIsIn(MySet set, MySetElement element) {
 	return false;
 }
 
+MySetElement mySetGetFirst(MySet set){
+	if (set==NULL){
+		return NULL;
+	}
+	set->iterator = set->head;
+	return set->iterator->element;
+}
+
 MySetElement mySetGetNext(MySet set) {
 	if (set == NULL ||
 			set->iterator == NULL) {
