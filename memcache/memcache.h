@@ -78,7 +78,7 @@ MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limi
  * 	MEMCACHE_NULL_ARGUMENT if memcache is NULL
  * 	MEMCACHE_USER_NOT_FOUND - if user with name username doesn't exist
  * 	MEMCACHE_BLOCK_NOT_ALLOCATED - if there is no allocated block with address prt
- * 	MEMCACHE_PERMISSION_DENIES - if username is not user who allocated block
+ * 	MEMCACHE_PERMISSION_DENIED - if username is not user who allocated block
  * 	MEMCACHE_INVALID_ARGUMENT - if mode is not legal
  */
 MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod);

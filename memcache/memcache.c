@@ -196,6 +196,7 @@ void memCacheDestroy(MemCache memcache){
 	mapDestroy(memcache->userMemoryLimit);
 	setDestroy(memcache->allAllocatedBlocks);
 	setDestroy(memcache->allFreeBlocks);
+	memcache = NULL;
 }
 
 MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
@@ -248,7 +249,7 @@ MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, 
 					&& mod != 'G'){
 		return MEMCACHE_INVALID_ARGUMENT;
 	}
-
+	*((char*)ptr-2-MEMCACHE_USER_NAME_LENGTH-1) = mod;
 	return MEMCACHE_SUCCESS;
 }
 
@@ -293,8 +294,21 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 }
 
 void* memCacheAllocate(MemCache memcache, char* username, int size){
-	MEMCACHE_ALLOCATE(type, var, NULL);
-
+	void *ptr = /*(char*)*/malloc(sizeof(int) + size + 2 + MEMCACHE_USER_NAME_LENGTH);
+	if (ptr == NULL){
+		return NULL;
+	}
+	ptr = size;
+	* (ptr + sizeof(int) + 1) = username;
+	SetResult setAddResult = setAdd(memcache->allAllocatedBlocks, void * ptr + sizeof(int) + 1 + MEMCACHE_USER_NAME_LENGTH);
+	CacheResult cacheAddResult = cachePush(memcache->allocatedBlocks, void * ptr + sizeof(int) + 1 + MEMCACHE_USER_NAME_LENGTH);
+	if (setAddResult != SET_SUCCESS
+			|| cacheAddResult != CACHE_SUCCESS){
+		SetResult removingSet = setRemove(memcache->allAllocatedBlocks, void * ptr + sizeof(int) + 1 + MEMCACHE_USER_NAME_LENGTH);
+		CacheResult removingCache = cacheFreeElement(memcache->allocatedBlocks, void * ptr + sizeof(int) + 1 + MEMCACHE_USER_NAME_LENGTH);
+		return NULL;
+	}
+	return *(ptr + sizeof(int) + 1 + MEMCACHE_USER_NAME_LENGTH);
 }
 
 MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
