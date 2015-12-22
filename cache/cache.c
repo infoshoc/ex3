@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CACHE_INVALID_ITERATOR_INDEX 1
+#define CACHE_INVALID_ITERATOR_INDEX (-1)
 typedef struct cache_t {
 	ComputeCacheKey computeKey;
 	Set *container;
@@ -47,6 +47,7 @@ Cache cacheCreate(
 	CACHE_ALLOCATE(cache_t, cache, NULL);
 
 	//initialization
+	cache->computeKey = compute_key;
 	cache->cache_size = size;
 	cache->iteratorIndex = CACHE_INVALID_ITERATOR_INDEX;
 	cache->container = (Set*)malloc(sizeof(*cache->container) * size);
