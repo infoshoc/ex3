@@ -64,18 +64,18 @@ Cache cacheCreate(
 	return cache;
 }
 
-CacheResult cachePush(Cache cache, Orange orange) {
+CacheResult cachePush(Cache cache, CacheElement element) {
 	// TODO make generic
-	if (cache == NULL || orange == NULL) {
+	if (cache == NULL || element == NULL) {
 		return CACHE_ILLEGAL_ARGUMENT;
 	}
 
-	int cellIndex = cacheGetCellIndexForOrangeSize(orangeGetSize(orange));
+	int cellIndex = computeKey(element);
 	if (!cacheIsKeyCorrect(cache, cellIndex)) {
 		return CACHE_OUT_OF_RANGE;
 	}
 
-	if (listInsertFirst(cache->container[cellIndex], orange) == LIST_OUT_OF_MEMORY) {
+	if (listInsertFirst(cache->container[cellIndex], element) == LIST_OUT_OF_MEMORY) {
 		return CACHE_OUT_OF_MEMORY;
 	}
 

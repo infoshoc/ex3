@@ -47,8 +47,25 @@ MySet mySetCopy(MySet set){
 	}
 	MySet newSet = mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, compareMySetElements compareElements);
 	int size = mySetGetSize(MySet set);
-	newSet->head =
-	newSet->iterator =
+	MySetNode current = set->head;
+	MySetResult adding;
+	for (int i=0;i<size;i++){
+		adding = mySetAdd(newSet, current);
+		current=current->next;
+		if (adding == MY_SET_OUT_OF_MEMORY){
+			mySetDestroy(newSet);
+			free (current);
+			return NULL;
+		}
+	}
+	newSet->head = set->head;
+	MySetElement position = mySetGetCurrent(MySet set);
+	newSet->iterator = mySetGetFirst(newSet);
+	while (newSet->compareElements(newSet->iterator,position)!=0){
+		newSet->iterator=mySetGetNext(newSet);
+	}
+	free (position);
+	free (current);
 	return newSet;
 }
 
@@ -66,6 +83,19 @@ void mySetDestroy(MySet set) {
 	free(set);
 }
 
+int mySetGetSize(MySet set){
+	if (set==NULL){
+		return -1;
+	}
+	MySetNode position = set->head;
+	int i=1;
+	While (position->next!=NULL){
+		i++;
+		position = position->next;
+	}
+	return i;
+}
+
 bool mySetIsIn(MySet set, MySetElement element) {
 	if (set == NULL || element == NULL) {
 		return false;
@@ -79,6 +109,14 @@ bool mySetIsIn(MySet set, MySetElement element) {
 	return false;
 }
 
+MySetElement mySetGetFirst(MySet set){
+	if (set==NULL){
+		return NULL;
+	}
+	set->iterator = set->head;
+	return set->iterator;
+}
+
 MySetElement mySetGetNext(MySet set) {
 	if (set == NULL ||
 			set->iterator == NULL) {
@@ -86,6 +124,14 @@ MySetElement mySetGetNext(MySet set) {
 	}
 	set->iterator = set->iterator->next;
 	if (set->iterator == NULL) {
+		return NULL;
+	}
+	return set->iterator->element;
+}
+
+MySetElement mySetGetCurrent(MySet set){
+	if (set == NULL ||
+		set->iterator == NULL) {
 		return NULL;
 	}
 	return set->iterator->element;
@@ -127,6 +173,18 @@ MySetResult mySetAdd(MySet set, MySetElement element) {
 	return MY_SET_SUCCESS;
 }
 
+MySetResult mySetRemove(MySet set, MySetElement element){
+	if (set==NULL){
+		return MY_SET_NULL_ARGUMENT;
+	}
+	if (mySetIsIn(set, element)==false){
+		return MY_SET_ITEM_DOES_NOT_EXIST;
+	}
+	MySetElement elementFound = mySetExtract(set, element);
+	set->freeElement (elementFound);
+	return MY_SET_SUCCESS;
+}
+
 MySetElement mySetExtract(MySet set, MySetElement element) {
 	if (set == NULL || !mySetIsIn(set, element)) {
 		return NULL;
@@ -162,13 +220,13 @@ MySetResult mySetClear(MySet set){
 	if (set==NULL){
 		return MY_SET_NULL_ARGUMENT;
 	}
-	int size = mySetGetSize(MySet set);
-	MySetElement clearElement = mySetGetFirst(MySet set);
-	for (int i=0;i<clearElement; i++){
-		set->freeElement->clearElement;
-		MySetElement mySetGetNext(MySet set);
+	MySetElement clearElement = mySetGetFirst(set);
+	MySetResult clearing = mySetRemove(set, clearEelement);
+	while (clearing!=MY_SET_NULL_ARGUMENT){
+		clearElement = mySetGetFirst(set);
+		clearing = mySetRemove(set, clearEelement);
 	}
-
+	return MY_SET_SUCCESS;
 }
 
 MySet mySetFilter(MySet set, logicalCondition condition) {
