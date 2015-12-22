@@ -7,8 +7,6 @@ typedef struct MySetNode_t {
 	struct MySetNode_t *next;
 } *MySetNode, MySetNode_t;
 
-
-
 typedef struct MySet_t {
 	copyMySetElements copyElement;
 	freeMySetElements freeElement;
@@ -39,6 +37,28 @@ MySet mySetCreate(copyMySetElements copyElement, freeMySetElements freeElement, 
 	set->head = NULL;
 	set->iterator = NULL;
 	return set;
+}
+
+MySet mySetCopy(MySet set){
+	if (set == NULL){
+		return NULL;
+	}
+	MySet newSet = mySetCreate(set->copyElement, set->freeElement,
+			set->compareElements);
+	if (newSet == NULL) {
+		return NULL;
+	}
+
+	for (MySetNode current = set->head; current != NULL; current = current->next){
+		MySetResult adding = mySetAdd(newSet, current);
+		if (adding == MY_SET_OUT_OF_MEMORY){
+			mySetDestroy(newSet);
+			return NULL;
+		}
+		assert(adding == MY_SET_SUCCESS);
+	}
+
+	return newSet;
 }
 
 void mySetDestroy(MySet set) {
