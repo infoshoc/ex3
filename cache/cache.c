@@ -103,12 +103,10 @@ CacheResult cacheFreeElement(Cache cache, CacheElement element) {
 }
 
 CacheElement cacheExtractElementByKey(Cache cache, int key){
-//CacheResult cacheGet(Cache cache, int index, CacheElement element) {
 	if (cache == NULL) {
 		return NULL;
 	}
 
-	//int cellIndex = cache->computeKey(element);//cacheGetCellIndexForOrangeSize(index);
 	if (!cacheIsKeyCorrect(cache, key)) {
 		return NULL;
 	}
@@ -116,10 +114,7 @@ CacheElement cacheExtractElementByKey(Cache cache, int key){
 	if (setGetSize(cache->container[key]) == 0) {
 		return NULL;
 	}
-	CacheElement result = setExtract(cache->container[key], element);
-	//	return CACHE_OUT_OF_MEMORY;
-	//}
-	//cacheFreeOrange(cache, index);
+	CacheElement result = setExtract(cache->container[key], setGetFirst(cache->container[key]));
 	return result;
 }
 

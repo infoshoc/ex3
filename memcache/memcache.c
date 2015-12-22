@@ -189,6 +189,15 @@ MemCache memCacheCreate() {
 	return memcache;
 }
 
+void memCacheDestroy(MemCache memcache){
+	cacheDestroy(memcache->freeBlocks);
+	cacheDestroy(memcache->allocatedBlocks);
+	graphDestroy(memcache->userRelations);
+	mapDestroy(memcache->userMemoryLimit);
+	setDestroy(memcache->allAllocatedBlocks);
+	setDestroy(memcache->allFreeBlocks);
+}
+
 MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
@@ -221,6 +230,28 @@ MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limi
 	return MEMCACHE_SUCCESS;
 }
 
+MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod){
+	if (memcache==NULL){
+		return MEMCACHE_NULL_ARGUMENT;
+	}
+	if (memcacheIsUserExists(memcache, username)==false){
+		return MEMCACHE_USER_NOT_FOUND;
+	}
+	if (!setIsIn(memcache->allAllocatedBlocks, ptr)){
+		return MEMCACHE_BLOCK_NOT_ALLOCATED;
+	}
+	if (memcacheBlockGetOwner(ptr) != username){
+		return MEMCACHE_PERMISSION_DENIED;
+	}
+	if (mod !='U'
+			&& mod != 'A'
+					&& mod != 'G'){
+		return MEMCACHE_INVALID_ARGUMENT;
+	}
+
+	return MEMCACHE_SUCCESS;
+}
+
 MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
@@ -243,6 +274,27 @@ MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2)
 	assert(graphAddEdgeResult == GRAPH_SUCCESS);
 
 	return MEMCACHE_SUCCESS;
+}
+
+MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username2){
+	if (memcache == NULL) {
+		return MEMCACHE_NULL_ARGUMENT;
+	}
+	if (!memcacheIsUserExists(memcache, username1) ||
+		!memcacheIsUserExists(memcache, username2)) {
+		return MEMCACHE_USER_NOT_FOUND;
+	}
+	GrarhResult removingEdge = graphRemoveDirectedEdge(memcache->userRelations, username1, username2);
+	if (removingEdge == GRAPH_OUT_OF_MEMORY){
+		return MEMCACHE_OUT_OF_MEMORY;
+	}
+	assert(removingEdge == GRAPH_SUCCESS);
+	return MEMCACHE_SUCCESS;
+}
+
+void* memCacheAllocate(MemCache memcache, char* username, int size){
+	MEMCACHE_ALLOCATE(type, var, NULL);
+
 }
 
 MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
@@ -294,6 +346,13 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 	return MEMCACHE_SUCCESS;
 }
 
+void* memCacheGetFirstAllocatedBlock(MemCache memcache){
+	if (memcache == NULL) {
+		return NULL;
+	}
+	return setGetFirst (memcache->allAllocatedBlocks);
+}
+
 void* memCacheGetNextAllocatedBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
@@ -301,11 +360,32 @@ void* memCacheGetNextAllocatedBlock(MemCache memcache) {
 	return setGetNext(memcache->allAllocatedBlocks);
 }
 
+void* memCacheGetCurrentAllocatedBlock(MemCache memcache){
+	if (memcache == NULL) {
+		return NULL;
+	}
+	return setGetCurrent (memcache->allAllocatedBlocks);
+}
+
+void* memCacheGetFirstFreeBlock(MemCache memcache){
+	if (memcache == NULL) {
+		return NULL;
+	}
+	return setGetFirst (memcache->allFreeBlocks);
+}
+
 void* memCacheGetNextFreeBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
 	}
 	return setGetNext(memcache->allFreeBlocks);
+}
+
+void* memCacheGetCurrentFreeBlock(MemCache memcache){
+	if (memcache == NULL) {
+		return NULL;
+	}
+	return setGetCurrent(memcache->allFreeBlocks);
 }
 
 static CacheResult memCacheClearBlockCache(Cache cache, int size) {
