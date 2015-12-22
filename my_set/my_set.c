@@ -106,7 +106,7 @@ MySetElement mySetGetFirst(MySet set){
 		return NULL;
 	}
 	set->iterator = set->head;
-	return set->iterator->element;
+	return set->iterator ? set->iterator->element : NULL;
 }
 
 MySetElement mySetGetNext(MySet set) {
