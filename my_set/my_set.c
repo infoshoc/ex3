@@ -115,10 +115,7 @@ MySetElement mySetGetNext(MySet set) {
 		return NULL;
 	}
 	set->iterator = set->iterator->next;
-	if (set->iterator == NULL) {
-		return NULL;
-	}
-	return set->iterator->element;
+	return set->iterator ? set->iterator->element : NULL;
 }
 
 MySetResult mySetAdd(MySet set, MySetElement element) {
