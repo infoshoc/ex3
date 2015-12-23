@@ -89,6 +89,9 @@ static int graphEdgeCompare(GraphEdge edge1, GraphEdge edge2) {
 }
 
 Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, freeGraphVertex freeVertex) {
+	if (!copyVertex || !compareVertex || !freeVertex) {
+		return NULL;
+	}
 	Graph graph;
 	GRAPH_ALLOCATE(Graph_t, graph, NULL);
 
