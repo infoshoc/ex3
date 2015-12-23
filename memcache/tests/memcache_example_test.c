@@ -125,10 +125,10 @@ static bool memCacheSetBlockModTest(void) {
 	ASSERT_NOT_NULL(memcache);
 
 	//users
-	const char * const user1 = "gammaray";
-	const char * const user2 = "scorpion";
-	const char * const user3 = "amaranth";
-	const char * const user4 = "nightwis";
+	char * user1 = "gammaray";
+	char * user2 = "scorpion";
+	char * user3 = "amaranth";
+	char * user4 = "nightwis";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 100), MEMCACHE_SUCCESS);
@@ -154,7 +154,7 @@ static bool memCacheSetBlockModTest(void) {
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, NULL, NULL, 'B'), MEMCACHE_USER_NOT_FOUND);
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user4, NULL, 'B'), MEMCACHE_USER_NOT_FOUND);
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, NULL, 'B'), MEMCACHE_BLOCK_NOT_ALLOCATED);
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1+1, 'B'), MEMCACHE_BLOCK_NOT_ALLOCATED);
+	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, (char*)block1+1, 'B'), MEMCACHE_BLOCK_NOT_ALLOCATED);
 	ASSERT_TRUE(checkBlock(block1, 10, 'U', user1, NULL));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block2, 'B'), MEMCACHE_BLOCK_NOT_ALLOCATED);
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, block2, 'B'), MEMCACHE_BLOCK_NOT_ALLOCATED);
@@ -183,10 +183,9 @@ static bool memCacheUntrustTest(void) {
 	ASSERT_NOT_NULL(memcache);
 
 	//users
-	const char * const user1 = "gammaray";
-	const char * const user2 = "scorpion";
-	const char * const user3 = "amaranth";
-	const char * const user4 = "nightwis";
+	char * user1 = "gammaray";
+	char * user2 = "scorpion";
+	char * user3 = "amaranth";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 100), MEMCACHE_SUCCESS);
@@ -248,10 +247,10 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_NOT_NULL(memcache);
 
 	//users
-	const char * const user1 = "gammaray";
-	const char * const user2 = "scorpion";
-	const char * const user3 = "amaranth";
-	const char * const user4 = "nightwis";
+	char * user1 = "gammaray";
+	char * user2 = "scorpion";
+	char * user3 = "amaranth";
+	char * user4 = "nightwis";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
@@ -270,7 +269,7 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_TRUE(checkBlock(block11, 256, 'U', user1, NULL));
 	ASSERT_NULL(memCacheAllocate(memcache, user1, 1));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block11, 'A'), MEMCACHE_SUCCESS);
-	ASSERT_TRUE(checkBlock(block11, 256, 'A', NULL));
+	ASSERT_TRUE(checkBlock(block11, 256, 'A', user1, NULL));
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block11), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(block11, memCacheGetFirstFreeBlock(memcache));
 	void *block21 = memCacheAllocate(memcache, user2, 256);
@@ -297,18 +296,19 @@ static bool memCacheFreeTest() {
 	ASSERT_NOT_NULL(memcache);
 
 	//users
-	const char * const user1 = "gammaray";
-	const char * const user2 = "scorpion";
-	const char * const user3 = "amaranth";
-	const char * const user4 = "nightwis";
+	char * user1 = "gammaray";
+	char * user2 = "scorpion";
+	char * user3 = "amaranth";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 266), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 300), MEMCACHE_SUCCESS);
 
-	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL) == MEMCACHE_BLOCK_NOT_ALLOCATED);
+	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL), MEMCACHE_BLOCK_NOT_ALLOCATED);
 	// TODO finish writing
+
+	return true;
 }
 
 static bool memCacheAllocatedBlockForeachTest() {
@@ -325,35 +325,36 @@ static bool memCacheAllocatedBlockForeachTest() {
 	ASSERT_NULL(memCacheGetNextAllocatedBlock(memcache));
 
 	// users
-	const char * const user = "oomph!!!";
+	char * user = "oomph!!!";
 
 	// add 2 system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user, 393354), MEMCACHE_SUCCESS);
 
 	// allocations
-	const int SIZE2ALLOCATE_LENGTH = 9;
-	const int SIZE2ALLOCATE[SIZE2ALLOCATE_LENGTH] = {1, 1, 1, 23, 23, 23, (1<<10), (1<<10), (1<<10)};
-	void * blocks[SIZE2ALLOCATE_LENGTH];
-	int visitedTimes[SIZE2ALLOCATE_LENGTH] = {0};
+#define MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH 9
+	const int SIZE2ALLOCATE[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH] =
+		{1, 1, 1, 23, 23, 23, (1<<10), (1<<10), (1<<10)};
+	void * blocks[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH];
+	int visitedTimes[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH] = {0};
 
-	for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
+	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
 		blocks[i] = memCacheAllocate(memcache, user, SIZE2ALLOCATE[i]);
 		ASSERT_NOT_NULL(blocks[i]);
 	}
 
 	int iterations = 0;
-	MEMCACHE_ALLOCATED_FOREACH(void*, block, memcache) {
+	MEMCACHE_ALLOCATED_FOREACH(block, memcache) {
 		++iterations;
-		for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
+		for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
 			if (blocks[i] == block) {
 				++visitedTimes[i];
 			}
 		}
 	}
 
-	ASSERT_EQUAL(iterations, SIZE2ALLOCATE_LENGTH);
-	for (int i = 0; i < SIZE2ALLOCATE_LENGTH; ++i) {
-		ASSERT_EQUAL(visitedTimes[i], 1);
+	ASSERT_EQUAL(iterations, MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH);
+	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
+		ASSERT_EQUAL(SIZE2ALLOCATE[i], 1);
 	}
 
 	return true;
@@ -361,16 +362,23 @@ static bool memCacheAllocatedBlockForeachTest() {
 
 static bool memCacheFreeBlockForeachTest() {
 	// TODO write it
+
+	return true;
 }
 
 int main() {
-  RUN_TEST(memCacheExampleTest);
-  RUN_TEST(memCacheDestroyTest);
-  RUN_TEST(memCacheSetBlockModTest);
-  RUN_TEST(memCacheUntrustTest);
-  RUN_TEST(memCacheAllocateTest);
-  RUN_TEST(memCacheAllocatedBlockForeachTest);
-  RUN_TEST(memCacheFreeBlockForeachTest);
+	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
+
+	RUN_TEST(memCacheExampleTest);
+	RUN_TEST(memCacheDestroyTest);
+	RUN_TEST(memCacheSetBlockModTest);
+	RUN_TEST(memCacheUntrustTest);
+	RUN_TEST(memCacheAllocateTest);
+	RUN_TEST(memCacheAllocatedBlockForeachTest);
+	RUN_TEST(memCacheFreeBlockForeachTest);
+	RUN_TEST(memCacheFreeTest);
+	RUN_TEST(memCacheFreeBlockForeachTest);
 
   return 0;
 }

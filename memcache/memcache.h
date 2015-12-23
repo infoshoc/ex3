@@ -238,7 +238,7 @@ MemCachResult memCacheReset(MemCache memcache);
 #define MEMCACHE_ALLOCATED_FOREACH(iterator,memcache) \
 	for(void *iterator = memCacheGetFirstAllocatedBlock(memcache) ; \
 		iterator;\
-		iterator = memcacheGetNextAllocatedBlock(memcache))
+		iterator = memCacheGetNextAllocatedBlock(memcache))
 
 /*!
 * Macro for iterating over a free blocks.
