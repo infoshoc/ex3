@@ -266,8 +266,22 @@ static bool graphCreateTest() {
 	return true;
 }
 
-static bool graphRemoveVertexTest() {
+static bool graphIsVertexExistsTest() {
 	Graph graph;
+
+	char * vertex = "Cherkasy";
+	char * vertex5 = "Lviv";
+
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, free);
+	ASSERT_TEST(graph != NULL);
+
+	ASSERT_TEST(graphAddVertex(graph, vertex) == GRAPH_SUCCESS);
+
+	ASSERT_TEST(graphIsVertexExists(graph, vertex) == true);
+	ASSERT_TEST(graphIsVertexExists(graph, NULL) == false);
+	ASSERT_TEST(graphIsVertexExists(NULL, vertex5)==false);
+	ASSERT_TEST(graphIsVertexExists(NULL, NULL) == false);
+	ASSERT_TEST(graphIsVertexExists(graph, vertex5) == false);
 
 	return true;
 }
@@ -278,8 +292,9 @@ int main() {
 	RUN_TEST(graphIsDirectedEdgeTest);
 	RUN_TEST(graphRemoveVertexTest);
 
+	RUN_TEST(graphAddVertexTest);
 	RUN_TEST(graphCreateTest);
-	RUN_TEST(graphRemoveVertexTest);
+	RUN_TEST(graphIsVertexExistsTest);
 	RUN_TEST(graphRemoveDirectedEdgeTest);
 	RUN_TEST(graphClearTest);
 
