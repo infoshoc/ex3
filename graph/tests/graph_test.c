@@ -325,6 +325,7 @@ static bool graphRemoveDirectedEdgeTest() {
 	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, (freeGraphVertex)free);
 	ASSERT_TEST(graph != NULL);
 
+	ASSERT_TEST(graphAddVertex(graph, vertexNotInGraph) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_SUCCESS);
@@ -389,6 +390,7 @@ static bool graphClearTest(){
 	ASSERT_TEST(graphClear(NULL) == GRAPH_NULL_ARGUMENT);
 	ASSERT_TEST(graphClear(graph) == GRAPH_SUCCESS);
 
+	ASSERT_TEST(graphAddVertex(graph, vertexNotInGraph) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_SUCCESS);
@@ -402,6 +404,7 @@ static bool graphClearTest(){
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphClear(graph) == GRAPH_SUCCESS);
 
+	ASSERT_TEST(graphAddVertex(graph, vertexNotInGraph) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_SUCCESS);
