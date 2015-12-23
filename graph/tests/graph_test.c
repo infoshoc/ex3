@@ -416,8 +416,8 @@ static bool graphClearTest(){
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex4, vertex2) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex3, vertex4) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphAddDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
-	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphRemoveDirectedEdge(graph, vertex2, vertex1) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphRemoveVertex(graph, vertex3) == GRAPH_SUCCESS);
 	ASSERT_TEST(graphClear(graph) == GRAPH_SUCCESS);
 
 	graphDestroy(graph);
