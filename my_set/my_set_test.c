@@ -394,6 +394,7 @@ static bool testMySetClear() {
 		ASSERT_TEST(mySetClear(set) == MY_SET_SUCCESS);
 		ASSERT_TEST(mySetGetSize(set) == 0);
 	}
+	mySetDestroy(set);
 	return true;
 }
 

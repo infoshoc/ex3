@@ -245,8 +245,8 @@ MemCachResult memCacheReset(MemCache memcache);
 * Declares a new iterator for the loop.
 */
 #define MEMCACHE_FREE_FOREACH(iterator,memcache) \
-	for(void *iterator = memcacheGetFirstFreeBlock(memcache) ; \
+	for(void *iterator = memCacheGetFirstFreeBlock(memcache) ; \
 		iterator;\
-		iterator = memcacheGetNextFreeBlock(memcache))
+		iterator = memCacheGetNextFreeBlock(memcache))
 
 #endif /* MEMCACHE_H_ */

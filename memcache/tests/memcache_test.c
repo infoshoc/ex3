@@ -328,9 +328,8 @@ static bool memCacheFreeTest() {
 	ASSERT_EQUAL(memCacheFree(memcache, user1, fake_block+sizeof(int)+1+1+8+2), MEMCACHE_BLOCK_NOT_ALLOCATED);
 	free(fake_block);
 	ASSERT_EQUAL(memCacheFree(memcache, user4, block1), MEMCACHE_USER_NOT_FOUND);
-
-	// TODO finish writing
-
+	ASSERT_EQUAL(memCacheFree(memcache, user4, fake_block), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_EQUAL(memCacheFree(memcache, user2, block1), MEMCACHE_PERMISSION_DENIED);
 	memCacheDestroy(memcache);
 	return true;
 }
@@ -351,7 +350,7 @@ static bool memCacheAllocatedBlockForeachTest() {
 	// users
 	char * user = "oomph!!!";
 
-	// add 2 system
+	// add to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user, 393354), MEMCACHE_SUCCESS);
 
 	// allocations
@@ -385,8 +384,80 @@ static bool memCacheAllocatedBlockForeachTest() {
 }
 
 static bool memCacheFreeBlockForeachTest() {
-	// TODO write it
+	// NULL stable
+	ASSERT_NULL(memCacheGetCurrentFreeBlock(NULL));
+	ASSERT_NULL(memCacheGetFirstFreeBlock(NULL));
+	ASSERT_NULL(memCacheGetNextFreeBlock(NULL));
 
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	//users
+	char *user1 = "accept!!";
+	char *user2 = "offsprin";
+	char *user3 = "nightwis";
+	char *user4 = "johndoe!";
+
+	// add to system
+	const int MAX_SIZE = 258;
+	const int MEMORY_LIMIT = (1+MAX_SIZE) * MAX_SIZE / 2;
+	ASSERT_EQUAL(memCacheAddUser(memcache, user1, MEMORY_LIMIT), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user2, MEMORY_LIMIT), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user3, MEMORY_LIMIT), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user4, MEMORY_LIMIT), MEMCACHE_SUCCESS);
+
+	// trusts
+	ASSERT_SUCCESS(memCacheTrust(memcache, user2, user4));
+
+	//Empty cache
+	ASSERT_NULL(memCacheGetCurrentFreeBlock(memcache));
+	ASSERT_NULL(memCacheGetFirstFreeBlock(memcache));
+	ASSERT_NULL(memCacheGetNextFreeBlock(memcache));
+
+	// allocate blocks
+	void *user1Blocks[258] = {NULL}, *user2Blocks[258] = {NULL}, *user3Blocks[258] = {NULL}, *user4Blocks[258] = {NULL};
+	for (int size = 1; size <= 258; ++size) {
+		ASSERT_NOT_NULL(user1Blocks[size-1] = memCacheAllocate(memcache, user1, size));
+		ASSERT_TRUE(checkBlock(user1Blocks[size-1], size, 'U', user1, NULL));
+		ASSERT_NOT_NULL(user2Blocks[size-1] = memCacheAllocate(memcache, user2, size));
+		ASSERT_TRUE(checkBlock(user2Blocks[size-1], size, 'U', user2, NULL));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user2, user2Blocks[size-1], 'G'));
+		ASSERT_TRUE(checkBlock(user2Blocks[size-1], size, 'G', user2, NULL));
+		ASSERT_NOT_NULL(user3Blocks[size-1] = memCacheAllocate(memcache, user3, size));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user3, user3Blocks[size-1], 'A'));
+		ASSERT_TRUE(checkBlock(user3Blocks[size-1], size, 'A', user3, NULL));
+		ASSERT_NOT_NULL(user4Blocks[size-1] = memCacheAllocate(memcache, user4, size));
+	}
+
+	// deallocate blocks
+	void *freedBlocks[3*256];
+	int visited[3*256] = {0};
+	for (int size = 1; size <= 256; ++size) {
+		ASSERT_SUCCESS(memCacheFree(memcache, user1, user1Blocks[size-1]));
+		freedBlocks[3*(size-1)] = user1Blocks[size-1];
+		ASSERT_SUCCESS(memCacheFree(memcache, user4, user2Blocks[size-1]));
+		freedBlocks[3*(size-1)+1] = user2Blocks[size-1];
+		ASSERT_EQUAL(memCacheFree(memcache, user2, user2Blocks[size-1]), MEMCACHE_BLOCK_NOT_ALLOCATED);
+		ASSERT_SUCCESS(memCacheFree(memcache, user4, user3Blocks[size-1]));
+		freedBlocks[3*(size-1)+2] = user3Blocks[size-1];
+	}
+	ASSERT_SUCCESS(memCacheFree(memcache, user1, user1Blocks[257-1]));
+	ASSERT_SUCCESS(memCacheFree(memcache, user4, user2Blocks[257-1]));
+	ASSERT_SUCCESS(memCacheFree(memcache, user4, user3Blocks[257-1]));
+
+	MEMCACHE_FREE_FOREACH(block, memcache) {
+		for (int i = 0; i < 3 * 256; ++i) {
+			if (freedBlocks[i] == block) {
+				++visited[i];
+			}
+		}
+	}
+
+	for (int i = 0; i < 3 * 256; ++i) {
+		ASSERT_EQUAL(visited[i], 1);
+	}
+
+	memCacheDestroy(memcache);
 	return true;
 }
 
@@ -399,9 +470,8 @@ int main() {
 	RUN_TEST(memCacheSetBlockModTest);
 	RUN_TEST(memCacheUntrustTest);
 	RUN_TEST(memCacheAllocateTest);
-	RUN_TEST(memCacheAllocatedBlockForeachTest);
-	RUN_TEST(memCacheFreeBlockForeachTest);
 	RUN_TEST(memCacheFreeTest);
+	RUN_TEST(memCacheAllocatedBlockForeachTest);
 	RUN_TEST(memCacheFreeBlockForeachTest);
 
   return 0;
