@@ -267,8 +267,6 @@ static bool graphCreateTest() {
 }
 
 static bool graphIsVertexExistsTest() {
-	Graph graph;
-
 	char * vertex = "Cherkasy";
 	char * vertex5 = "Lviv";
 
@@ -283,6 +281,37 @@ static bool graphIsVertexExistsTest() {
 	ASSERT_TEST(graphIsVertexExists(NULL, NULL) == false);
 	ASSERT_TEST(graphIsVertexExists(graph, vertex5) == false);
 
+	graphDestroy(graph);
+	return true;
+}
+
+static bool graphAddVertexTest() {
+	char * vertex1 = "Cherkasy";
+	char * vertex2 = "Lviv";
+	char * vertex3 = "Amber";
+	char * vertex4 = "Haifa";
+	char * vertex5 = "TelAviv";
+
+	Graph graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, free);
+	ASSERT_TEST(graph != NULL);
+
+	ASSERT_TEST(graphAddVertex(NULL, vertex1) == GRAPH_NULL_ARGUMENT);
+	ASSERT_TEST(graphAddVertex(graph, NULL) == GRAPH_NULL_ARGUMENT);
+	ASSERT_TEST(graphAddVertex(NULL, NULL) == GRAPH_NULL_ARGUMENT);
+
+	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex4) == GRAPH_SUCCESS);
+	ASSERT_TEST(graphAddVertex(graph, vertex5) == GRAPH_SUCCESS);
+
+	ASSERT_TEST(graphAddVertex(graph, vertex1) == GRAPH_VERTEX_ALREADY_EXISTS);
+	ASSERT_TEST(graphAddVertex(graph, vertex2) == GRAPH_VERTEX_ALREADY_EXISTS);
+	ASSERT_TEST(graphAddVertex(graph, vertex3) == GRAPH_VERTEX_ALREADY_EXISTS);
+	ASSERT_TEST(graphAddVertex(graph, vertex4) == GRAPH_VERTEX_ALREADY_EXISTS);
+	ASSERT_TEST(graphAddVertex(graph, vertex5) == GRAPH_VERTEX_ALREADY_EXISTS);
+
+	graphDestroy(graph);
 	return true;
 }
 
@@ -295,8 +324,8 @@ int main() {
 	RUN_TEST(graphAddVertexTest);
 	RUN_TEST(graphCreateTest);
 	RUN_TEST(graphIsVertexExistsTest);
-	RUN_TEST(graphRemoveDirectedEdgeTest);
-	RUN_TEST(graphClearTest);
+	//RUN_TEST(graphRemoveDirectedEdgeTest);
+	//RUN_TEST(graphClearTest);
 
 	return 0;
 }
