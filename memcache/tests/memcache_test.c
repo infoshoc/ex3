@@ -353,7 +353,7 @@ static bool memCacheAllocatedBlockForeachTest() {
 	ASSERT_NULL(memCacheGetNextAllocatedBlock(memcache));
 
 	// users
-	char * user = "oomph!!!";
+	char * user = "oomph123";
 
 	// add to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user, 393354), MEMCACHE_SUCCESS);
@@ -400,10 +400,10 @@ static bool memCacheFreeBlockForeachTest() {
 	ASSERT_NOT_NULL(memcache);
 
 	//users
-	char *user1 = "accept!!";
+	char *user1 = "accept12";
 	char *user2 = "offsprin";
 	char *user3 = "nightwis";
-	char *user4 = "johndoe!";
+	char *user4 = "johndoe1";
 
 	// add to system
 	const int MAX_SIZE = 258;

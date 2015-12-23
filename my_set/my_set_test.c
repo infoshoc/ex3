@@ -530,12 +530,18 @@ static bool testMySetExtract() {
 	ASSERT_TEST(mySetExtract(NULL, NULL) == NULL);
 
 	ASSERT_TEST(mySetExtract(set, values[0]) == NULL);
-	ASSERT_TEST(compareInt(mySetExtract(set, values[1]), values[1]) == 0);
-	ASSERT_TEST(compareInt(mySetExtract(set, values[2]), values[2]) == 0);
+	void *extract = NULL;
+	ASSERT_TEST(compareInt(extract = mySetExtract(set, values[1]), values[1]) == 0);
+	free(extract);
+	ASSERT_TEST(compareInt(extract = mySetExtract(set, values[2]), values[2]) == 0);
+	free(extract);
 	ASSERT_TEST(mySetExtract(set, values[3]) == NULL);
-	ASSERT_TEST(compareInt(mySetExtract(set, values[4]), values[4]) == 0);
-	ASSERT_TEST(compareInt(mySetExtract(set, values[5]), values[5]) == 0);
-	ASSERT_TEST(compareInt(mySetExtract(set, values[6]), values[6]) == 0);
+	ASSERT_TEST(compareInt(extract = mySetExtract(set, values[4]), values[4]) == 0);
+	free(extract);
+	ASSERT_TEST(compareInt(extract = mySetExtract(set, values[5]), values[5]) == 0);
+	free(extract);
+	ASSERT_TEST(compareInt(extract = mySetExtract(set, values[6]), values[6]) == 0);
+	free(extract);
 
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		freeInt(values[i]);
