@@ -160,6 +160,9 @@ static bool testCacheExtractElementByKey() {
 
 	free(elements[0]);
 	free(elements[1]);
+	free(elements[2]);
+
+	cacheDestroy(cache);
 
 	return true;
 }

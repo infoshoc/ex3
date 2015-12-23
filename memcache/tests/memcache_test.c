@@ -320,13 +320,18 @@ static bool memCacheFreeTest() {
 
 	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL), MEMCACHE_BLOCK_NOT_ALLOCATED);
 
+	const int FAKE_BLOCK_SIZE = 10;
 	void *block1;
-	ASSERT_NOT_NULL(block1 = memCacheAllocate(memcache, user1, 10));
-	char *fake_block = (char*)malloc(sizeof(int)+1+1+8+2+10+1);
+	ASSERT_NOT_NULL(block1 = memCacheAllocate(memcache, user1, FAKE_BLOCK_SIZE));
+	char *fake_block = (char*)calloc(sizeof(int)+1+1+8+2+FAKE_BLOCK_SIZE+1, sizeof(char));
 	ASSERT_NOT_NULL(fake_block);
-	memcpy(fake_block, (char*)block1 - 2 - 9 - 2 - sizeof(int), sizeof(int)+1+1+8+2+10+1);
+	*(int*)fake_block = FAKE_BLOCK_SIZE;
+	*(fake_block+sizeof(int)+1) = 'U';
+	strcpy(fake_block+sizeof(int)+1+1, user1);
+
 	ASSERT_EQUAL(memCacheFree(memcache, user1, fake_block+sizeof(int)+1+1+8+2), MEMCACHE_BLOCK_NOT_ALLOCATED);
 	free(fake_block);
+
 	ASSERT_EQUAL(memCacheFree(memcache, user4, block1), MEMCACHE_USER_NOT_FOUND);
 	ASSERT_EQUAL(memCacheFree(memcache, user4, fake_block), MEMCACHE_USER_NOT_FOUND);
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1), MEMCACHE_PERMISSION_DENIED);
@@ -379,6 +384,8 @@ static bool memCacheAllocatedBlockForeachTest() {
 	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
 		ASSERT_EQUAL(visitedTimes[i], 1);
 	}
+
+	memCacheDestroy(memcache);
 
 	return true;
 }

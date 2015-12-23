@@ -492,7 +492,7 @@ static CacheResult memCacheClearBlockCache(Cache cache, int size) {
 	assert(cache != NULL && size > 0);
 	for (int key = 0; key < size; ++key) {
 		MemCacheBlock block;
-		while ((block = cacheExtractElementByKey(cache, size)) != NULL) {
+		while ((block = cacheExtractElementByKey(cache, key)) != NULL) {
 			memcacheFreeBlock(block);
 		}
 	}
