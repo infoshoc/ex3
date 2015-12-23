@@ -100,6 +100,10 @@ Graph graphCreate(copyGraphVertex copyVertex, compareGraphVertex compareVertex, 
 	graph->freeVertex = freeVertex;
 	graph->vertices = setCreate(copyVertex, freeVertex, compareVertex);
 	graph->edges = setCreate((copySetElements)graphEdgeCopy, (freeSetElements)graphEdgeFree, (compareSetElements)graphEdgeCompare);
+	if (!graph->vertices || !graph->edges) {
+		graphDestroy(graph);
+		return NULL;
+	}
 
 	return graph;
 }
