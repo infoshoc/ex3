@@ -189,15 +189,19 @@ static bool memCacheUntrustTest(void) {
 	char * user1 = "gammaray";
 	char * user2 = "scorpion";
 	char * user3 = "amaranth";
+	char * user4 = "radiohea";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 100), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 100), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 100), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user4, 100), MEMCACHE_SUCCESS);
 
 	// trusting
 	ASSERT_EQUAL(memCacheTrust(memcache, user1, user2), MEMCACHE_SUCCESS);
 	ASSERT_EQUAL(memCacheTrust(memcache, user2, user1), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheTrust(memcache, user4, user4), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheTrust(memcache, user4, user4), MEMCACHE_SUCCESS);
 
 	// allocations
 	void *block1U1 = memCacheAllocate(memcache, user1, 23);
@@ -218,9 +222,13 @@ static bool memCacheUntrustTest(void) {
 	void *block2A1 = memCacheAllocate(memcache, user2, 13);
 	ASSERT_NOT_NULL(block2A1);
 	ASSERT_TRUE(checkBlock(block2A1, 13, 'U', user2, NULL));
+	void *block4U1 = memCacheAllocate(memcache, user4, 23);
+
 
 	// untrusting
 	ASSERT_EQUAL(memCacheUntrust(memcache, user1, user2), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheUntrust(memcache, user4, user4), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheUntrust(memcache, user4, user4), MEMCACHE_SUCCESS);
 
 	// chmods
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1G1, 'G'), MEMCACHE_SUCCESS);
@@ -239,6 +247,7 @@ static bool memCacheUntrustTest(void) {
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1U1), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1G1), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1A1), MEMCACHE_SUCCESS);
+	ASSERT_EQUAL(memCacheFree(memcache, user4, block4U1), MEMCACHE_SUCCESS);
 
 	memCacheDestroy(memcache);
 
@@ -302,6 +311,7 @@ static bool memCacheFreeTest() {
 	char * user1 = "gammaray";
 	char * user2 = "scorpion";
 	char * user3 = "amaranth";
+	char * user4 = "nightwis";
 
 	// add users to system
 	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
@@ -309,8 +319,19 @@ static bool memCacheFreeTest() {
 	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 300), MEMCACHE_SUCCESS);
 
 	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL), MEMCACHE_BLOCK_NOT_ALLOCATED);
+
+	void *block1;
+	ASSERT_NOT_NULL(block1 = memCacheAllocate(memcache, user1, 10));
+	char *fake_block = (char*)malloc(sizeof(int)+1+1+8+2+10+1);
+	ASSERT_NOT_NULL(fake_block);
+	memcpy(fake_block, (char*)block1 - 2 - 9 - 2 - sizeof(int), sizeof(int)+1+1+8+2+10+1);
+	ASSERT_EQUAL(memCacheFree(memcache, user1, fake_block+sizeof(int)+1+1+8+2), MEMCACHE_BLOCK_NOT_ALLOCATED);
+	free(fake_block);
+	ASSERT_EQUAL(memCacheFree(memcache, user4, block1), MEMCACHE_USER_NOT_FOUND);
+
 	// TODO finish writing
 
+	memCacheDestroy(memcache);
 	return true;
 }
 

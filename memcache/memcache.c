@@ -58,7 +58,7 @@ static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
 }
 static int memcacheBlocksCompare(MemCacheBlock block1, MemCacheBlock block2) {
 	// in order to escape overflow in difference
-	return (uintptr_t)block1 < (uintptr_t)block2 ? -1 : (uintptr_t*)block1 == (uintptr_t*)block2 ? 0 : 1;
+	return block1 < block2 ? -1 : block1 == block2 ? 0 : 1;
 }
 static void memcacheFreeBlock(MemCacheBlock block) {
 	free((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
@@ -300,7 +300,8 @@ MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2)
 		return MEMCACHE_OUT_OF_MEMORY;
 	}
 
-	assert(graphAddEdgeResult == GRAPH_SUCCESS);
+	assert(graphAddEdgeResult == GRAPH_SUCCESS ||
+			graphAddEdgeResult == GRAPH_EDGE_ALREADY_EXISTS);
 
 	return MEMCACHE_SUCCESS;
 }
