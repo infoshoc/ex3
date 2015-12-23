@@ -237,11 +237,51 @@ static bool graphRemoveVertexTest() {
 	return true;
 }
 
+static bool graphCreateTest() {
+	Graph graph;
+	graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, free);
+	ASSERT_TEST(graph != NULL);
+	graphDestroy (graph);
+	graph = graphCreate(NULL, (compareGraphVertex)strcmp, free);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate((copyGraphVertex)stringCopy, NULL, free);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate((copyGraphVertex)stringCopy, (compareGraphVertex)strcmp, NULL);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate(NULL, NULL, free);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate(NULL, (compareGraphVertex)strcmp, NULL);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate((copyGraphVertex)stringCopy, NULL, NULL);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	graph = graphCreate(NULL, NULL, NULL);
+	ASSERT_TEST(graph == NULL);
+	graphDestroy (graph);
+	return true;
+}
+
+static bool graphRemoveVertexTest() {
+	Graph graph;
+
+	return true;
+}
+
 int main() {
 	RUN_TEST(graphDestroyTest);
 	RUN_TEST(graphAddDirectedEdgeTest);
 	RUN_TEST(graphIsDirectedEdgeTest);
 	RUN_TEST(graphRemoveVertexTest);
+
+	RUN_TEST(graphCreateTest);
+	RUN_TEST(graphRemoveVertexTest);
+	RUN_TEST(graphRemoveDirectedEdgeTest);
+	RUN_TEST(graphClearTest);
 
 	return 0;
 }
