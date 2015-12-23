@@ -397,6 +397,65 @@ static bool testMySetClear() {
 	return true;
 }
 
+static bool testMySetCreate() {
+	MySet set;
+	set = mySetCreate(copyInt, freeInt, compareInt);
+	ASSERT_TEST(set->iterator==NULL);
+	ASSERT_TEST(set->head==NULL);
+	ASSERT_TEST(set!=NULL);
+	mySetDestroy(set);
+	set = mySetCreate(NULL, freeInt, compareInt);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(copyInt, NULL, compareInt);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(copyInt, freeInt, NULL);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(NULL, NULL, compareInt);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(NULL, freeInt, NULL);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(copyInt, NULL, NULL);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	set = mySetCreate(NULL, NULL, NULL);
+	ASSERT_TEST(set==NULL);
+	mySetDestroy(set);
+	return true;
+}
+
+static bool testMySetDestroy() {
+	MySet set = mySetCreate(copyInt, freeInt, compareInt);
+	const int VALUES_NUMBER = 7;
+	int* values[VALUES_NUMBER];
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		values[i] = (int*)malloc(sizeof(int));
+		if (values[i] == NULL) {
+			while (i) {
+				freeInt(values[--i]);
+			}
+		}
+		*values[i] = i;
+	}
+	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[3]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[1]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[5]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[2]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[6]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetRemove(set, values[1]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetRemove(set, values[5]) == MY_SET_SUCCESS);
+	mySetDestroy(set);
+
+	mySetDestroy(NULL);
+	return true;
+}
+
 int main() {
 	RUN_TEST(testMySetExample);
 	RUN_TEST(testMySetCopy);
@@ -405,6 +464,12 @@ int main() {
 	RUN_TEST(testMySetAdd);
 	RUN_TEST(testMySetRemove);
 	RUN_TEST(testMySetClear);
+
+	RUN_TEST(testMySetCreate);
+	RUN_TEST(testMySetDestroy);
+	//RUN_TEST(testMySetIsIn);
+	//RUN_TEST(testMySetExtract);
+	//RUN_TEST(testMySetFilter);
 	return 0;
 }
 
