@@ -401,8 +401,8 @@ static bool testMySetClear() {
 static bool testMySetCreate() {
 	MySet set;
 	set = mySetCreate(copyInt, freeInt, compareInt);
-	ASSERT_TEST(set->iterator==NULL);
-	ASSERT_TEST(set->head==NULL);
+	ASSERT_TEST(mySetGetCurrent(set) == NULL);
+	ASSERT_TEST(mySetGetFirst(set) == NULL);
 	ASSERT_TEST(set!=NULL);
 	mySetDestroy(set);
 	set = mySetCreate(NULL, freeInt, compareInt);
