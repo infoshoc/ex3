@@ -16,7 +16,7 @@
 #include "map.h"
 #include "set.h"
 
-#define MEMCACHE_FREE_BLOCK_MAX_SIZE (265)
+#define MEMCACHE_FREE_BLOCK_MAX_SIZE (256)
 #define MEMCACHE_ALLOCATED_BLOCK_MODULO (1<<10)
 #define MEMCACHE_USER_NAME_LENGTH (8)
 
@@ -64,7 +64,7 @@ static void memcacheFreeBlock(MemCacheBlock block) {
 	free((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
 }
 static inline int memcacheBlockGetSize(MemCacheBlock block) {
-	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-sizeof(int));
+	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
 }
 static inline char* memcacheBlockGetModePointer(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH-1;
@@ -76,11 +76,14 @@ static inline MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
 static MemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
-static int memcacheAvailibleBlockComputeKey(MemCacheBlock block) {
+static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
 	return (uintptr_t)block % MEMCACHE_ALLOCATED_BLOCK_MODULO;
 }
-static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
-	return memcacheBlockGetSize(block)-1;
+static int memcacheBlockSizeToCacheIndex(int size) {
+	return size-1;
+}
+static int memcacheFreeBlockComputeKey(MemCacheBlock block) {
+	return memcacheBlockSizeToCacheIndex(memcacheBlockGetSize(block));
 }
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	if (user == NULL) {
@@ -89,11 +92,6 @@ static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	if (user[MEMCACHE_USER_NAME_LENGTH] != '\0') {
 		return false;
 	}
-#ifndef NDEBUG
-	FILE *debuglog = fopen("debug.log", "a");
-	fprintf(debuglog, "memcacheIsUserNameLegal: %d %s %d %d\n", __LINE__, user, (int)strlen(user),  strlen(user) == MEMCACHE_USER_NAME_LENGTH);
-	fclose(debuglog);
-#endif
 	return strlen(user) == MEMCACHE_USER_NAME_LENGTH;
 }
 static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
@@ -130,12 +128,6 @@ static bool memcacheIsUserExists(MemCache memcache, MemCacheUser user) {
 	if (!memcacheIsUserNameLegal(user)) {
 		return false;
 	}
-#ifndef NDEBUG
-	FILE *debuglog = fopen("debug.log", "a");
-	fprintf(debuglog, "memcacheIsUserExists: %d %d\n", __LINE__, mapContains(memcache->userMemoryLimit, user));
-	fprintf(debuglog, "memcacheIsUserExists: %d %d\n", __LINE__, graphIsVertexExists(memcache->userRelations, user));
-	fclose(debuglog);
-#endif
 
 	assert(mapContains(memcache->userMemoryLimit, user) ==
 			graphIsVertexExists(memcache->userRelations, user));
@@ -171,10 +163,10 @@ MemCache memCacheCreate() {
 			// we should not really copy block either, it will be the same block
 			memcacheBlockCopy,
 			memcacheBlocksCompare,
-			memcacheAvailibleBlockComputeKey);
+			memcacheFreeBlockComputeKey);
 
 	memcache->allocatedBlocks = cacheCreate(
-			MEMCACHE_FREE_BLOCK_MAX_SIZE,
+			MEMCACHE_ALLOCATED_BLOCK_MODULO,
 			// we should not deallocate block while clearing, we might need it
 			memcacheDoNothing,
 			// we should not really copy block either, it will be the same block
@@ -332,7 +324,7 @@ MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username
 
 void* memCacheAllocate(MemCache memcache, char* username, int size){
 	// parameters check
-	if (memcache == NULL || !memcacheIsUserExists(memcache, username)) {
+	if (memcache == NULL || !memcacheIsUserExists(memcache, username) || size <= 0) {
 		return NULL;
 	}
 	if (memcacheGetUserLimit(memcache, username) < size) {
@@ -340,14 +332,17 @@ void* memCacheAllocate(MemCache memcache, char* username, int size){
 		return NULL;
 	}
 
-	//allocate and initialize to zero
-	char *ptr = (char*)calloc(sizeof(int) + 1 + 1 + MEMCACHE_USER_NAME_LENGTH + 2 + size + 1, sizeof(char));
-	if (ptr == NULL){
-		return NULL;
+	//try to find in cache
+	char *ptr = cacheExtractElementByKey(memcache->freeBlocks, memcacheBlockSizeToCacheIndex(size));
+	if (ptr == NULL) {
+		//allocate and initialize to zero
+		ptr = (char*)calloc(sizeof(int) + 1 + 1 + MEMCACHE_USER_NAME_LENGTH + 2 + size + 1, sizeof(char));
+		if (ptr == NULL){
+			return NULL;
+		}
+		// move start to user field
+		ptr += sizeof(int) + 1 + 1 + MEMCACHE_USER_NAME_LENGTH + 2;
 	}
-
-	// move start to user field
-	ptr += sizeof(int) + 1 + 1 + MEMCACHE_USER_NAME_LENGTH + 2;
 	// set size of block
 	*(int*)(ptr - 2 - MEMCACHE_USER_NAME_LENGTH - 1 - 1 - sizeof(int)) = size;
 	// set default mode
@@ -355,10 +350,8 @@ void* memCacheAllocate(MemCache memcache, char* username, int size){
 	// set owner
 	strcpy(memcacheBlockGetOwner(ptr), username);
 
-	SetResult setAddResult = setAdd(memcache->allAllocatedBlocks, ptr);
 	CacheResult cacheAddResult = cachePush(memcache->allocatedBlocks, ptr);
-	if (setAddResult == SET_OUT_OF_MEMORY
-			|| cacheAddResult == CACHE_OUT_OF_MEMORY){
+	if (cacheAddResult == CACHE_OUT_OF_MEMORY){
 		// consistency
 		setRemove(memcache->allAllocatedBlocks, ptr);
 		cacheFreeElement(memcache->allocatedBlocks, ptr);
@@ -369,7 +362,7 @@ void* memCacheAllocate(MemCache memcache, char* username, int size){
 	// decrease limit
 	memcacheIncreaseUserLimit(memcache, username, -size);
 
-	assert(setAddResult == SET_SUCCESS && cacheAddResult == CACHE_SUCCESS);
+	assert(cacheAddResult == CACHE_SUCCESS);
 	return ptr;
 }
 
@@ -413,12 +406,15 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 		memcacheFreeBlock(ptr);
 	} else {
 		assert(blockSize <= MEMCACHE_FREE_BLOCK_MAX_SIZE);
-		cachePush(memcache->freeBlocks, ptr);
+		CacheResult cachePushResult = cachePush(memcache->freeBlocks, ptr);
+		if (cachePushResult == CACHE_OUT_OF_MEMORY) {
+			return MEMCACHE_OUT_OF_MEMORY;
+		}
+		assert(cachePushResult == CACHE_SUCCESS);
 	}
 	//remove WITHOUT releasing
-	SetResult setFreeResult = setRemove(memcache->allAllocatedBlocks, ptr);
 	CacheResult cacheFreeResult = cacheFreeElement(memcache->allocatedBlocks, ptr);
-	assert(cacheFreeResult == CACHE_SUCCESS && setFreeResult == SET_SUCCESS);
+	assert(cacheFreeResult == CACHE_SUCCESS);
 
 	return MEMCACHE_SUCCESS;
 }
@@ -426,6 +422,19 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 void* memCacheGetFirstAllocatedBlock(MemCache memcache){
 	if (memcache == NULL) {
 		return NULL;
+	}
+	SetResult setClearResult = setClear(memcache->allAllocatedBlocks);
+	assert(setClearResult == SET_SUCCESS);
+	CACHE_FOREACH(set, memcache->allocatedBlocks) {
+		SET_FOREACH(MemCacheBlock, block, set) {
+			SetResult setAddResult = setAdd(memcache->allAllocatedBlocks, block);
+			if (setAddResult == SET_OUT_OF_MEMORY) {
+				SetResult setClearResult = setClear(memcache->allAllocatedBlocks);
+				assert(setClearResult == SET_SUCCESS);
+				return NULL;
+			}
+			assert(setAddResult == SET_SUCCESS);
+		}
 	}
 	return setGetFirst (memcache->allAllocatedBlocks);
 }
@@ -447,6 +456,20 @@ void* memCacheGetCurrentAllocatedBlock(MemCache memcache){
 void* memCacheGetFirstFreeBlock(MemCache memcache){
 	if (memcache == NULL) {
 		return NULL;
+	}
+
+	SetResult setClearResult = setClear(memcache->allFreeBlocks);
+	assert(setClearResult == SET_SUCCESS);
+	CACHE_FOREACH(set, memcache->freeBlocks) {
+		SET_FOREACH(MemCacheBlock, block, set) {
+			SetResult setAddResult = setAdd(memcache->allFreeBlocks, block);
+			if (setAddResult == SET_OUT_OF_MEMORY) {
+				SetResult setClearResult = setClear(memcache->allFreeBlocks);
+				assert(setClearResult == SET_SUCCESS);
+				return NULL;
+			}
+			assert(setAddResult == SET_SUCCESS);
+		}
 	}
 	return setGetFirst (memcache->allFreeBlocks);
 }

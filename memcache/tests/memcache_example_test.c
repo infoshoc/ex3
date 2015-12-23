@@ -80,7 +80,7 @@ static bool memCacheDestroyTest(void) {
 	const int ALLOCATED_CACHE_SIZE = (1<<10);
 	const int FREE_CACHE_SIZE = 256;
 	const int ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM = (1+ALLOCATED_CACHE_SIZE)*ALLOCATED_CACHE_SIZE/2;
-	const int ALL_POSSIBLE_FREE_BLOCKS_SUM = 3341;
+	const int ALL_POSSIBLE_FREE_BLOCKS_SUM = (1+FREE_CACHE_SIZE)*FREE_CACHE_SIZE/2;
 	// add users
 	char * username1 = "LepsGena";
 	char * username2 = "Coldplay";
@@ -93,10 +93,13 @@ static bool memCacheDestroyTest(void) {
 	for (int size = 1; size <= ALLOCATED_CACHE_SIZE; ++size) {
 		user1Memory[size-1] = memCacheAllocate(memcache, username1, size);
 		ASSERT_NOT_NULL(user1Memory[size-1]);
+		ASSERT_TRUE(checkBlock(user1Memory[size-1], size, 'U', username1, NULL));
 	}
 	for (int size = 1; size <= FREE_CACHE_SIZE; ++size) {
 		user2Memory[size-1] = memCacheAllocate(memcache, username2, size);
 		ASSERT_NOT_NULL(user2Memory[size-1]);
+		memCacheSetBlockMod(memcache, username2, user2Memory[size-1], 'G');
+		ASSERT_TRUE(checkBlock(user2Memory[size-1], size, 'G', username2, NULL));
 	}
 
 	//user1 and user2 trust each other
@@ -263,7 +266,7 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_NULL(memCacheAllocate(memcache, user4, 0));
 	ASSERT_NULL(memCacheAllocate(memcache, user1, 0));
 	ASSERT_NULL(memCacheAllocate(memcache, user1, -1));
-	ASSERT_NULL(memCacheAllocate(memcache, user1, 14));
+	ASSERT_NULL(memCacheAllocate(memcache, user1, 257));
 	void *block11 = memCacheAllocate(memcache, user1, 256);
 	ASSERT_NOT_NULL(block11);
 	ASSERT_TRUE(checkBlock(block11, 256, 'U', user1, NULL));
@@ -354,7 +357,7 @@ static bool memCacheAllocatedBlockForeachTest() {
 
 	ASSERT_EQUAL(iterations, MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH);
 	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
-		ASSERT_EQUAL(SIZE2ALLOCATE[i], 1);
+		ASSERT_EQUAL(visitedTimes[i], 1);
 	}
 
 	return true;
