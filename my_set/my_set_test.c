@@ -452,8 +452,50 @@ static bool testMySetDestroy() {
 	ASSERT_TEST(mySetRemove(set, values[1]) == MY_SET_SUCCESS);
 	ASSERT_TEST(mySetRemove(set, values[5]) == MY_SET_SUCCESS);
 	mySetDestroy(set);
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		freeInt(values[i]);
+	}
 
 	mySetDestroy(NULL);
+	return true;
+}
+
+static bool testMySetIsIn() {
+	MySet set = mySetCreate(copyInt, freeInt, compareInt);
+	const int VALUES_NUMBER = 7;
+	int* values[VALUES_NUMBER];
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		values[i] = (int*)malloc(sizeof(int));
+		if (values[i] == NULL) {
+			while (i) {
+				freeInt(values[--i]);
+			}
+		}
+		*values[i] = i;
+	}
+	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[1]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[5]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[2]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[6]) == MY_SET_SUCCESS);
+
+	ASSERT_TEST(mySetIsIn(set, NULL) == false);
+	ASSERT_TEST(mySetIsIn(NULL, values[4]) == false);
+	ASSERT_TEST(mySetIsIn(NULL, values[0]) == false);
+	ASSERT_TEST(mySetIsIn(NULL, NULL) == false);
+
+	ASSERT_TEST(mySetIsIn(set, values[0]) == false);
+	ASSERT_TEST(mySetIsIn(set, values[1]) == true);
+	ASSERT_TEST(mySetIsIn(set, values[2]) == true);
+	ASSERT_TEST(mySetIsIn(set, values[3]) == false);
+	ASSERT_TEST(mySetIsIn(set, values[4]) == true);
+	ASSERT_TEST(mySetIsIn(set, values[5]) == true);
+	ASSERT_TEST(mySetIsIn(set, values[6]) == true);
+
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		freeInt(values[i]);
+	}
+	mySetDestroy(set);
 	return true;
 }
 
@@ -468,7 +510,7 @@ int main() {
 
 	RUN_TEST(testMySetCreate);
 	RUN_TEST(testMySetDestroy);
-	//RUN_TEST(testMySetIsIn);
+	RUN_TEST(testMySetIsIn);
 	//RUN_TEST(testMySetExtract);
 	//RUN_TEST(testMySetFilter);
 	return 0;
