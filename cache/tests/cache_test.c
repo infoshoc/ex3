@@ -195,10 +195,11 @@ static bool testCacheForeach() {
 	Cache cache = cacheCreate(BASE, freeInt, copyInt, compareInt, getLastDigit);
 	ASSERT_TEST(cache != NULL);
 
-#define TEST_CACHE_FOREACH_ELEMENTS 100
-	int counted[TEST_CACHE_FOREACH_ELEMENTS] = {0};
+	const int TEST_CACHE_FOREACH_ELEMENTS = 100;
+	int counted[TEST_CACHE_FOREACH_ELEMENTS];
 
 	for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
+		counted[i] = 0;
 		ASSERT_TEST(cachePush(cache, &i) == CACHE_SUCCESS);
 		ASSERT_TEST(cachePush(cache, &i) == CACHE_ITEM_ALREADY_EXISTS);
 		ASSERT_TEST(cacheIsIn(cache, &i));

@@ -49,7 +49,8 @@ void memCacheDestroy(MemCache memcache);
  * Adds new user to memory management system.
  *
  * @param memcache - memory management system to which users is added
- * @param username - name of new user
+ * @param username - name of new user consists of 8 characters, which are
+ * 	big or small english letters or digits
  * @param memory_limit - maximal number of bytes availible for user
  *
  * @return

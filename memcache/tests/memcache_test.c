@@ -7,8 +7,9 @@
 
 #include "test_utilities.h"
 #include <stdlib.h>
-#include "../memcache.h"
+#include <inttypes.h>
 #include <string.h>
+#include "../memcache.h"
 
 #define ASSERT_TRUE(x) ASSERT_TEST(x);
 #define ASSERT_EQUAL(x,y) ASSERT_TEST((x) == (y));
@@ -314,27 +315,79 @@ static bool memCacheFreeTest() {
 	char * user4 = "nightwis";
 
 	// add users to system
-	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 266), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 300), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 3*(1+257)*257/2));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 266));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 300));
+
+	// relations
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user2));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user3));
+	ASSERT_SUCCESS(memCacheUntrust(memcache, user1, user3));
 
 	ASSERT_EQUAL(memCacheFree(memcache, user1, NULL), MEMCACHE_BLOCK_NOT_ALLOCATED);
 
-	const int FAKE_BLOCK_SIZE = 10;
-	void *block1;
-	ASSERT_NOT_NULL(block1 = memCacheAllocate(memcache, user1, FAKE_BLOCK_SIZE));
-	char *fake_block = (char*)calloc(sizeof(int)+1+1+8+2+FAKE_BLOCK_SIZE+1, sizeof(char));
-	ASSERT_NOT_NULL(fake_block);
-	*(int*)fake_block = FAKE_BLOCK_SIZE;
-	*(fake_block+sizeof(int)+1) = 'U';
-	strcpy(fake_block+sizeof(int)+1+1, user1);
+	for(int size = 4; size <= 257; ++size) {
+		void *block1 = NULL, *block2 = NULL, *block3 = NULL;
+		ASSERT_NOT_NULL(block1 = memCacheAllocate(memcache, user1, size));
+		ASSERT_NOT_NULL(block2 = memCacheAllocate(memcache, user1, size));
+		ASSERT_NOT_NULL(block3 = memCacheAllocate(memcache, user1, size));
+		ASSERT_TRUE(checkBlock(block1, size, 'U', user1, NULL));
+		ASSERT_TRUE(checkBlock(block2, size, 'U', user1, NULL));
+		ASSERT_TRUE(checkBlock(block2, size, 'U', user1, NULL));
 
-	ASSERT_EQUAL(memCacheFree(memcache, user1, fake_block+sizeof(int)+1+1+8+2), MEMCACHE_BLOCK_NOT_ALLOCATED);
-	free(fake_block);
+		char *fake_block = (char*)calloc(sizeof(int)+1+1+8+2+size+1, sizeof(char));
+		ASSERT_NOT_NULL(fake_block);
+		*(int*)fake_block = size;
+		*(fake_block+sizeof(int)+1) = 'U';
+		strcpy(fake_block+sizeof(int)+1+1, user1);
+		ASSERT_TRUE(checkBlock(fake_block+sizeof(int)+1+1+8+2, size, 'U', user1, NULL));
+		ASSERT_EQUAL(memCacheFree(memcache, user4, fake_block), MEMCACHE_USER_NOT_FOUND);
+		ASSERT_EQUAL(memCacheFree(memcache, user2, fake_block), MEMCACHE_BLOCK_NOT_ALLOCATED);
+		ASSERT_EQUAL(memCacheFree(memcache, user1, fake_block+sizeof(int)+1+1+8+2), MEMCACHE_BLOCK_NOT_ALLOCATED);
 
-	ASSERT_EQUAL(memCacheFree(memcache, user4, block1), MEMCACHE_USER_NOT_FOUND);
-	ASSERT_EQUAL(memCacheFree(memcache, user4, fake_block), MEMCACHE_USER_NOT_FOUND);
-	ASSERT_EQUAL(memCacheFree(memcache, user2, block1), MEMCACHE_PERMISSION_DENIED);
+		free(fake_block);
+
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block2, 'G'));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block3, 'A'));
+		ASSERT_TRUE(checkBlock(block1, size, 'U', user1, NULL));
+		ASSERT_TRUE(checkBlock(block2, size, 'G', user1, NULL));
+		ASSERT_TRUE(checkBlock(block3, size, 'A', user1, NULL));
+		sprintf(block1, "0%d", size);
+		sprintf(block2, "1%d", size);
+		sprintf(block3, "2%d", size);
+		ASSERT_EQUAL(memCacheFree(memcache, user4, block1), MEMCACHE_USER_NOT_FOUND);
+		ASSERT_EQUAL(memCacheFree(memcache, user3, block1), MEMCACHE_PERMISSION_DENIED);
+		ASSERT_EQUAL(memCacheFree(memcache, user2, block1), MEMCACHE_PERMISSION_DENIED);
+		ASSERT_SUCCESS(memCacheFree(memcache, user1, block1));
+		ASSERT_EQUAL(memCacheFree(memcache, user1, block1), MEMCACHE_BLOCK_NOT_ALLOCATED);
+		ASSERT_EQUAL(memCacheFree(memcache, user4, block2), MEMCACHE_USER_NOT_FOUND);
+		ASSERT_EQUAL(memCacheFree(memcache, user3, block2), MEMCACHE_PERMISSION_DENIED);
+		ASSERT_SUCCESS(memCacheFree(memcache, user2, block2));
+		ASSERT_EQUAL(memCacheFree(memcache, user2, block2), MEMCACHE_BLOCK_NOT_ALLOCATED);
+		ASSERT_EQUAL(memCacheFree(memcache, user4, block3), MEMCACHE_USER_NOT_FOUND);
+		ASSERT_SUCCESS(memCacheFree(memcache, user3, block3));
+		ASSERT_EQUAL(memCacheFree(memcache, user3, block3), MEMCACHE_BLOCK_NOT_ALLOCATED);
+	}
+
+	int cnt[3][256] = {{0}};
+	MEMCACHE_FREE_FOREACH(block, memcache) {
+		int modeIndex = *(char*)block - '0';
+		ASSERT_TRUE(0 <= modeIndex && modeIndex < 3);
+		int size = (int)strtoimax((char*)block+1, NULL, 10);
+		ASSERT_TRUE(1 <= size && size <= 256);
+		char mod = modeIndex == 0 ? 'U' : modeIndex == 1 ? 'G' : 'A';
+		char data[10];
+		sprintf(data, "%d%d", modeIndex, size);
+		ASSERT_TRUE(checkBlock(block, size, mod, user1, data));
+		++cnt[modeIndex][size-1];
+	}
+
+	for (int modeIndex = 0; modeIndex < 3; ++modeIndex) {
+		for (int size = 4; size <= 256; ++size) {
+			ASSERT_TRUE(cnt[modeIndex][size-1] == 1);
+		}
+	}
+
 	memCacheDestroy(memcache);
 	return true;
 }
@@ -390,7 +443,95 @@ static bool memCacheAllocatedBlockForeachTest() {
 	return true;
 }
 
-static bool memCacheFreeBlockForeachTest() {
+static bool memCacheFreeTest2(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	const int size = 50;
+
+	char *user = "ironmaid";
+
+	char *content1 = "block1 of ironmaid";
+	char *content2 = "block2 of ironmaid";
+
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user, 2*size));
+
+	void *block1 = memCacheAllocate(memcache, user, size);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user, NULL));
+	void *block2 = memCacheAllocate(memcache, user, size);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user, NULL));
+
+	sprintf(block1, content1);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user, content1));
+	sprintf(block2, content2);
+	ASSERT_TRUE(checkBlock(block2, size, 'U', user, content2));
+
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, block1, 'A'));
+	ASSERT_TRUE(checkBlock(block1, size, 'A', user, content1));
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, block2, 'G'));
+	ASSERT_TRUE(checkBlock(block2, size, 'G', user, content2));
+
+	ASSERT_SUCCESS(memCacheFree(memcache, user, block1));
+	ASSERT_SUCCESS(memCacheFree(memcache, user, block2));
+
+	ASSERT_TRUE(checkBlock(memCacheGetFirstFreeBlock(memcache), size, 'A', user, content1) ||
+			checkBlock(memCacheGetFirstFreeBlock(memcache), size, 'G', user, content2));
+
+	ASSERT_TRUE(memCacheGetFirstFreeBlock(memcache) == block1 ||
+			memCacheGetFirstFreeBlock(memcache) == block2);
+
+	memCacheDestroy(memcache);
+	return true;
+}
+
+static bool memCacheFreeTest3(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	const int size = 50;
+
+	char *user1 = "ironmaid";
+	char *user2 = "edguy423";
+	char *user3 = "paradise";
+
+	char *content1 = "block1 of ironmaid";
+	char *content2 = "block2 of ironmaid";
+
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 2*size));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 2*size));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 2*size));
+
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user3));
+
+	void *block1 = memCacheAllocate(memcache, user1, size);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user1, NULL));
+	void *block2 = memCacheAllocate(memcache, user1, size);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user1, NULL));
+
+	sprintf(block1, content1);
+	ASSERT_TRUE(checkBlock(block1, size, 'U', user1, content1));
+	sprintf(block2, content2);
+	ASSERT_TRUE(checkBlock(block2, size, 'U', user1, content2));
+
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1, 'A'));
+	ASSERT_TRUE(checkBlock(block1, size, 'A', user1, content1));
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block2, 'G'));
+	ASSERT_TRUE(checkBlock(block2, size, 'G', user1, content2));
+
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, block1));
+	ASSERT_SUCCESS(memCacheFree(memcache, user3, block2));
+
+	ASSERT_TRUE(checkBlock(memCacheGetFirstFreeBlock(memcache), size, 'A', user1, content1) ||
+			checkBlock(memCacheGetFirstFreeBlock(memcache), size, 'G', user1, content2));
+
+	ASSERT_TRUE(memCacheGetFirstFreeBlock(memcache) == block1 ||
+			memCacheGetFirstFreeBlock(memcache) == block2);
+
+	memCacheDestroy(memcache);
+	return true;
+}
+
+static bool memCacheFreeBlockForeachTest(void) {
 	// NULL stable
 	ASSERT_NULL(memCacheGetCurrentFreeBlock(NULL));
 	ASSERT_NULL(memCacheGetFirstFreeBlock(NULL));
@@ -478,10 +619,12 @@ int main() {
 	RUN_TEST(memCacheUntrustTest);
 	RUN_TEST(memCacheAllocateTest);
 	RUN_TEST(memCacheFreeTest);
+	RUN_TEST(memCacheFreeTest2);
+	RUN_TEST(memCacheFreeTest3);
 	RUN_TEST(memCacheAllocatedBlockForeachTest);
 	RUN_TEST(memCacheFreeBlockForeachTest);
 
-  return 0;
+	return 0;
 }
 
 
