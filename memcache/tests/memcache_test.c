@@ -593,12 +593,20 @@ static bool memCacheFreeBlockForeachTest(void) {
 	ASSERT_SUCCESS(memCacheFree(memcache, user4, user2Blocks[257-1]));
 	ASSERT_SUCCESS(memCacheFree(memcache, user4, user3Blocks[257-1]));
 
+	int currentSize = 1, blocks_of_current_size = 0;
 	MEMCACHE_FREE_FOREACH(block, memcache) {
 		for (int i = 0; i < 3 * 256; ++i) {
 			if (freedBlocks[i] == block) {
 				++visited[i];
+				int size = i / 3 + 1;
+				ASSERT_EQUAL(size, currentSize);
 			}
 		}
+		if (++blocks_of_current_size == 3) {
+			++currentSize;
+			blocks_of_current_size = 0;
+		}
+
 	}
 
 	for (int i = 0; i < 3 * 256; ++i) {

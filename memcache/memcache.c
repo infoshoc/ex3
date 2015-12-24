@@ -25,10 +25,6 @@ typedef struct MemCache_t {
 	Cache allocatedBlocks;
 	Graph userRelations;
 	Map userMemoryLimit;
-
-	/* used for iteration */
-	Set allAllocatedBlocks;
-	Set allFreeBlocks;
 } MemCache_t;
 
 typedef enum MemCacheBlockMode {
@@ -194,25 +190,10 @@ MemCache memCacheCreate() {
 			(freeMapKeyElements)memcacheUserFree,
 			(compareMapKeyElements)memcacheUsersCompare);
 
-	memcache->allAllocatedBlocks = setCreate(
-			memcacheBlockCopy,
-			// it is helpful set, we should not deallocate blocks while clear
-			memcacheDoNothing,
-			memcacheBlocksCompare
-			);
-
-	memcache->allFreeBlocks = setCreate(
-			memcacheBlockCopy,
-			// it is helpful set, we should not deallocate blocks while clear
-			memcacheDoNothing,
-			memcacheBlocksCompare
-			);
 
 	if (!memcache->freeBlocks ||
 			!memcache->allocatedBlocks ||
-			!memcache->userRelations ||
-			!memcache->allAllocatedBlocks ||
-			!memcache->allFreeBlocks) {
+			!memcache->userRelations) {
 		memCacheDestroy(memcache);
 		return NULL;
 	}
@@ -233,8 +214,6 @@ void memCacheDestroy(MemCache memcache){
 	cacheDestroy(memcache->allocatedBlocks);
 	graphDestroy(memcache->userRelations);
 	mapDestroy(memcache->userMemoryLimit);
-	setDestroy(memcache->allAllocatedBlocks);
-	setDestroy(memcache->allFreeBlocks);
 	free(memcache);
 }
 
@@ -363,7 +342,6 @@ void* memCacheAllocate(MemCache memcache, char* username, int size){
 	CacheResult cacheAddResult = cachePush(memcache->allocatedBlocks, ptr);
 	if (cacheAddResult == CACHE_OUT_OF_MEMORY){
 		// consistency
-		setRemove(memcache->allAllocatedBlocks, ptr);
 		cacheFreeElement(memcache->allocatedBlocks, ptr);
 		memcacheFreeBlock(ptr);
 		return NULL;
@@ -429,38 +407,68 @@ MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 	return MEMCACHE_SUCCESS;
 }
 
+static void *memCacheGetFirstBlock(Cache cache) {
+	assert(cache != NULL);
+	CACHE_FOREACH(set, cache) {
+		assert(set != NULL);
+		if (setGetFirst(set) != NULL) {
+			return setGetFirst(set);
+		}
+	}
+	return NULL;
+}
+static void *memCacheGetCurrentBlock(Cache cache) {
+	assert(cache != NULL);
+	Set cacheCurrentCell = cacheGetCurrent(cache);
+	if (!cacheCurrentCell) {
+		return NULL;
+	}
+	return setGetCurrent(cacheCurrentCell);
+}
+static void *memCacheGetNextBlock(Cache cache) {
+	assert(cache != NULL);
+	Set cacheCurrentCell = cacheGetCurrent(cache);
+	if (!cacheCurrentCell) {
+		// cache iterator not set or finished
+		return NULL;
+	}
+
+	if (setGetNext(cacheCurrentCell)) {
+		// we have elements in current cell
+		assert(setGetCurrent(cacheCurrentCell) != NULL);
+		return setGetCurrent(cacheCurrentCell);
+	}
+
+	// no elements in current set
+	assert(!setGetCurrent(cacheCurrentCell));
+	// skip empty cells
+	while (cacheGetNext(cache) != NULL &&
+			setGetFirst(cacheGetCurrent(cache)) == NULL);
+
+	assert(cacheGetCurrent(cache) == NULL || setGetFirst(cacheGetCurrent(cache)) != NULL);
+	//NULL safe
+	return memCacheGetCurrentBlock(cache);
+}
+
 void* memCacheGetFirstAllocatedBlock(MemCache memcache){
 	if (memcache == NULL) {
 		return NULL;
 	}
-	SetResult setClearResult = setClear(memcache->allAllocatedBlocks);
-	assert(setClearResult == SET_SUCCESS);
-	CACHE_FOREACH(set, memcache->allocatedBlocks) {
-		SET_FOREACH(MemCacheBlock, block, set) {
-			SetResult setAddResult = setAdd(memcache->allAllocatedBlocks, block);
-			if (setAddResult == SET_OUT_OF_MEMORY) {
-				SetResult setClearResult = setClear(memcache->allAllocatedBlocks);
-				assert(setClearResult == SET_SUCCESS);
-				return NULL;
-			}
-			assert(setAddResult == SET_SUCCESS);
-		}
-	}
-	return setGetFirst (memcache->allAllocatedBlocks);
+	return memCacheGetFirstBlock(memcache->allocatedBlocks);
 }
 
 void* memCacheGetNextAllocatedBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return setGetNext(memcache->allAllocatedBlocks);
+	return memCacheGetNextBlock(memcache->allocatedBlocks);
 }
 
 void* memCacheGetCurrentAllocatedBlock(MemCache memcache){
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return setGetCurrent (memcache->allAllocatedBlocks);
+	return memCacheGetCurrentBlock(memcache->allocatedBlocks);
 }
 
 void* memCacheGetFirstFreeBlock(MemCache memcache){
@@ -468,34 +476,21 @@ void* memCacheGetFirstFreeBlock(MemCache memcache){
 		return NULL;
 	}
 
-	SetResult setClearResult = setClear(memcache->allFreeBlocks);
-	assert(setClearResult == SET_SUCCESS);
-	CACHE_FOREACH(set, memcache->freeBlocks) {
-		SET_FOREACH(MemCacheBlock, block, set) {
-			SetResult setAddResult = setAdd(memcache->allFreeBlocks, block);
-			if (setAddResult == SET_OUT_OF_MEMORY) {
-				SetResult setClearResult = setClear(memcache->allFreeBlocks);
-				assert(setClearResult == SET_SUCCESS);
-				return NULL;
-			}
-			assert(setAddResult == SET_SUCCESS);
-		}
-	}
-	return setGetFirst (memcache->allFreeBlocks);
+	return memCacheGetFirstBlock(memcache->freeBlocks);
 }
 
 void* memCacheGetNextFreeBlock(MemCache memcache) {
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return setGetNext(memcache->allFreeBlocks);
+	return memCacheGetNextBlock(memcache->freeBlocks);
 }
 
 void* memCacheGetCurrentFreeBlock(MemCache memcache){
 	if (memcache == NULL) {
 		return NULL;
 	}
-	return setGetCurrent(memcache->allFreeBlocks);
+	return memCacheGetCurrentBlock(memcache->freeBlocks);
 }
 
 static CacheResult memCacheClearBlockCache(Cache cache, int size) {
@@ -518,12 +513,6 @@ MemCachResult memCacheReset(MemCache memcache) {
 	assert(graphClearResult == GRAPH_SUCCESS);
 	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
 	assert(mapClearResult == MAP_SUCCESS);
-
-	// remove without releasing
-	SetResult allocatedSetClearResult = setClear(memcache->allAllocatedBlocks);
-	assert(allocatedSetClearResult == SET_SUCCESS);
-	SetResult freeSetClearResult = setClear(memcache->allFreeBlocks);
-	assert(freeSetClearResult == SET_SUCCESS);
 
 	// remove and release all blocks
 	CacheResult allocatedCacheClear =
