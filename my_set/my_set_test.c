@@ -187,11 +187,7 @@ static bool testMySetForeach() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 
@@ -240,11 +236,7 @@ static bool testMySetAdd() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 
@@ -321,11 +313,7 @@ static bool testMySetRemove() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 	MySet set = mySetCreate(copyInt, freeInt, compareInt);
@@ -436,11 +424,7 @@ static bool testMySetDestroy() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
@@ -467,11 +451,7 @@ static bool testMySetIsIn() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
@@ -506,11 +486,7 @@ static bool testMySetExtract() {
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
@@ -551,17 +527,24 @@ static bool testMySetExtract() {
 	return true;
 }
 
+static bool mySetTestAreSetsEqual(MySet set1, MySet set2) {
+	int *set2Element = mySetGetFirst(set2);
+	MY_SET_FOREACH(int*, set1Element, set1) {
+		if (INT(set1Element) != INT(set2Element)) {
+			return false;
+		}
+		set2Element = mySetGetNext(set2);
+	}
+	return mySetGetCurrent(set2) == NULL;
+}
+
 static bool testMySetFilter() {
 	MySet set = mySetCreate(copyInt, freeInt, compareInt);
 	const int VALUES_NUMBER = 7;
 	int* values[VALUES_NUMBER];
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		values[i] = (int*)malloc(sizeof(int));
-		if (values[i] == NULL) {
-			while (i) {
-				freeInt(values[--i]);
-			}
-		}
+		ASSERT_TEST(values[i] != NULL);
 		*values[i] = i;
 	}
 	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
@@ -573,27 +556,24 @@ static bool testMySetFilter() {
 	ASSERT_TEST(mySetAdd(set, values[6]) == MY_SET_SUCCESS);
 
 	ASSERT_TEST(mySetFilter(NULL, oddIntFilter) == NULL);
-	//ASSERT_TEST(mySetFilter(NULL, false) == NULL);
 	ASSERT_TEST(mySetFilter(set, NULL) == NULL);
 
 	MySet setNewTrue = mySetCreate(copyInt, freeInt, compareInt);
 	MySet setNewFalse = mySetCreate(copyInt, freeInt, compareInt);
-	MySetResult sorting;
 	for (int i = 0; i < VALUES_NUMBER; ++i){
-		if (oddIntFilter (values[i]) == true){
-		sorting = mySetAdd(setNewTrue, values[i]);
+		if (oddIntFilter (values[i])){
+			MySetResult sorting = mySetAdd(setNewTrue, values[i]);
+			ASSERT_TEST(sorting == MY_SET_SUCCESS);
 		}
-	//	else {
-			//MySetResult sorting = mySetAdd(setNewFalse, values[i]);
-	//	}
 	}
 
-	ASSERT_TEST(mySetFilter(set, oddIntFilter) == setNewTrue);
-	//ASSERT_TEST(mySetFilter(set, false) == setNewFalse);
+	MySet filtered = mySetFilter(set, oddIntFilter);
+	ASSERT_TEST(mySetTestAreSetsEqual(filtered, setNewTrue));
 
 	for (int i = 0; i < VALUES_NUMBER; ++i) {
 		freeInt(values[i]);
 	}
+	mySetDestroy(filtered);
 	mySetDestroy(setNewTrue);
 	mySetDestroy(setNewFalse);
 	mySetDestroy(set);
