@@ -319,6 +319,35 @@ static bool testCacheForeach() {
 	return true;
 }
 
+static bool testCacheClear(void) {
+	ASSERT_TEST(cacheClear(NULL) == CACHE_NULL_ARGUMENT);
+
+	Cache cache = cacheCreate(255, freeString, copyString, compareStrings, getFirstLetter);
+	ASSERT_TEST(cacheClear(cache) == CACHE_SUCCESS);
+
+	char * elements[] = {
+			"Ramones",
+			"Lumen",
+			"Louna",
+			"Arch Enemy",
+			"Linkin park"
+	};
+
+	const int ELEMENTS_SIZE = sizeof(elements) / sizeof(*elements);
+	for (int i = 0; i < ELEMENTS_SIZE; ++i) {
+		ASSERT_TEST(!cacheIsIn(cache, elements[i]));
+		ASSERT_TEST(cachePush(cache, elements[i]) == CACHE_SUCCESS);
+		ASSERT_TEST(cacheIsIn(cache, elements[i]));
+	}
+	ASSERT_TEST(cacheClear(cache) == CACHE_SUCCESS);
+	for (int i = 0; i < ELEMENTS_SIZE; ++i) {
+		ASSERT_TEST(!cacheIsIn(cache, elements[i]));
+	}
+	ASSERT_TEST(cacheClear(cache) == CACHE_SUCCESS);
+	cacheDestroy(cache);
+	return true;
+}
+
 int main() {
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
@@ -330,6 +359,7 @@ int main() {
 	RUN_TEST(testCacheExtractElementByKey);
 	RUN_TEST(testCacheIsIn);
 	RUN_TEST(testCacheForeach);
+	RUN_TEST(testCacheClear);
 	return 0;
 }
 
