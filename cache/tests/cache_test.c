@@ -145,8 +145,8 @@ static bool testCacheFreeElement(void) {
 			"Ramones",
 			"Lumen",
 			"Louna",
-			"Linkin park"
 			"Arch Enemy"
+			"Linkin park",
 	};
 	const int ELEMENTS_SIZE = sizeof(elements) / sizeof(*elements);
 
@@ -211,6 +211,45 @@ static bool testCacheExtractElementByKey() {
 
 	cacheDestroy(cache);
 
+	return true;
+}
+
+static bool testCacheIsIn(void) {
+	Cache cache = cacheCreate(255, freeString, copyString, compareStrings, getFirstLetter);
+	ASSERT_TEST(cache != NULL);
+
+	char outOfRange[2] = { (char)255, '\0' };
+	char *notInCache = "Rock";
+	char *doubled = "Louna";
+	char * elements[] = {
+			"Ramones",
+			"Lumen",
+			"Louna",
+			"Arch Enemy",
+			"Linkin park"
+	};
+
+	const int ELEMENTS_SIZE = sizeof(elements) / sizeof(*elements);
+	for (int i = 0; i < ELEMENTS_SIZE; ++i) {
+		ASSERT_TEST(!cacheIsIn(cache, elements[i]));
+		ASSERT_TEST(cachePush(cache, elements[i]) == CACHE_SUCCESS);
+		ASSERT_TEST(cacheIsIn(cache, elements[i]));
+	}
+	ASSERT_TEST(!cacheIsIn(cache, notInCache));
+	ASSERT_TEST(!cacheIsIn(NULL, notInCache));
+	ASSERT_TEST(cachePush(cache, outOfRange) == CACHE_OUT_OF_RANGE);
+	ASSERT_TEST(!cacheIsIn(cache, outOfRange));
+	ASSERT_TEST(cachePush(cache, doubled) == CACHE_ITEM_ALREADY_EXISTS);
+	ASSERT_TEST(cacheIsIn(cache, doubled));
+
+	for (int i = 0; i < ELEMENTS_SIZE; ++i) {
+		ASSERT_TEST(cacheIsIn(cache, elements[i]));
+		ASSERT_TEST(cacheFreeElement(cache, elements[i]) == CACHE_SUCCESS);
+		ASSERT_TEST(!cacheIsIn(cache, elements[i]));
+	}
+	ASSERT_TEST(cacheFreeElement(cache, notInCache) == CACHE_ITEM_DOES_NOT_EXIST);
+
+	cacheDestroy(cache);
 	return true;
 }
 
@@ -284,11 +323,12 @@ int main() {
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 
-	RUN_TEST(testCacheCreate);
 	RUN_TEST(testCacheExample);
-	RUN_TEST(testCacheFreeElement);
+	RUN_TEST(testCacheCreate);
 	RUN_TEST(testCachePush);
+	RUN_TEST(testCacheFreeElement);
 	RUN_TEST(testCacheExtractElementByKey);
+	RUN_TEST(testCacheIsIn);
 	RUN_TEST(testCacheForeach);
 	return 0;
 }
