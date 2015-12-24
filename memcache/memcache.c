@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 #include "memcache.h"
 #include "cache.h"
 #include "graph.h"
@@ -91,7 +92,15 @@ static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	if (user[MEMCACHE_USER_NAME_LENGTH] != '\0') {
 		return false;
 	}
-	return strlen(user) == MEMCACHE_USER_NAME_LENGTH;
+	if (strlen(user) != MEMCACHE_USER_NAME_LENGTH) {
+		return false;
+	}
+	for (int i = 0; i < MEMCACHE_USER_NAME_LENGTH; ++i) {
+		if (!isalnum(user[i])) {
+			return false;
+		}
+	}
+	return true;
 }
 static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
 	assert(memcacheIsUserNameLegal(user));
@@ -217,7 +226,8 @@ void memCacheDestroy(MemCache memcache){
 	}
 
 	// release everything
-	memCacheReset(memcache);
+	MemCachResult memCachResult = memCacheReset(memcache);
+	assert(memCachResult == MEMCACHE_SUCCESS);
 	//destroyers
 	cacheDestroy(memcache->freeBlocks);
 	cacheDestroy(memcache->allocatedBlocks);
