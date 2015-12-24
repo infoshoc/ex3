@@ -4,7 +4,7 @@
  *  Created on: Nov 26, 2015
  *      Author: tamer.mour
  */
-
+ 
 #include "test_utilities.h"
 #include <stdlib.h>
 #include <inttypes.h>
@@ -14,7 +14,7 @@
 #define ASSERT_TRUE(x) ASSERT_TEST(x);
 #define ASSERT_EQUAL(x,y) ASSERT_TEST((x) == (y));
 #define ASSERT_EQUAL_STR(x,y) ASSERT_TEST(strcmp((x),(y)) == 0);
-#define ASSERT_SUCCESS(x) ASSERT_EQUAL((x), MEMCACHE_SUCCESS)
+#define ASSERT_SUCCESS(x) ASSERT_EQUAL((x), MEMCACHE_SUCCESS);
 #define ASSERT_NOT_NULL(x) ASSERT_TRUE(x)
 #define ASSERT_NULL(x) ASSERT_TRUE(!x)
 
@@ -85,8 +85,8 @@ static bool memCacheDestroyTest(void) {
 	// add users
 	char * username1 = "LepsGena";
 	char * username2 = "Coldplay";
-	ASSERT_EQUAL(memCacheAddUser(memcache, username1, ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, username2, ALL_POSSIBLE_FREE_BLOCKS_SUM), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, username1, ALL_POSSIBLE_ALLOCATED_BLOCKS_SUM));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, username2, ALL_POSSIBLE_FREE_BLOCKS_SUM));
 
 	//allocate memory
 	void *user1Memory[ALLOCATED_CACHE_SIZE];
@@ -104,16 +104,16 @@ static bool memCacheDestroyTest(void) {
 	}
 
 	//user1 and user2 trust each other
-	ASSERT_EQUAL(memCacheTrust(memcache, username1, username2), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheTrust(memcache, username2, username1), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheTrust(memcache, username1, username2));
+	ASSERT_SUCCESS(memCacheTrust(memcache, username2, username1));
 
 	//user1 frees all memory user2 has, while latter is sleeping
 	for (int size = 1; size <= FREE_CACHE_SIZE; ++size) {
-		ASSERT_EQUAL(memCacheFree(memcache, username1, user2Memory[size-1]), MEMCACHE_SUCCESS);
+		ASSERT_SUCCESS(memCacheFree(memcache, username1, user2Memory[size-1]));
 	}
 
 	//user2 doesn't trusts to user1 anymore
-	ASSERT_EQUAL(memCacheUntrust(memcache, username2, username1), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheUntrust(memcache, username2, username1));
 
 	//start some iterations
 	ASSERT_NOT_NULL(memCacheGetFirstFreeBlock(memcache));
@@ -135,12 +135,12 @@ static bool memCacheSetBlockModTest(void) {
 	char * user4 = "nightwis";
 
 	// add users to system
-	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 100), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 100), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 100), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 100));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 100));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 100));
 
 	// relations
-	ASSERT_EQUAL(memCacheTrust(memcache, user1, user2), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user2));
 
 	// allocations
 	void *block1 = memCacheAllocate(memcache, user1, 10);
@@ -151,7 +151,7 @@ static bool memCacheSetBlockModTest(void) {
 	ASSERT_TRUE(checkBlock(block2, 23, 'U', user2, NULL));
 
 	// releasing
-	ASSERT_EQUAL(memCacheFree(memcache, user2, block2), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, block2));
 
 
 	ASSERT_EQUAL(memCacheSetBlockMod(NULL, NULL, NULL, 'B'), MEMCACHE_NULL_ARGUMENT);
@@ -166,14 +166,14 @@ static bool memCacheSetBlockModTest(void) {
 	ASSERT_TRUE(checkBlock(block1, 10, 'U', user1, NULL));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1, 'B'), MEMCACHE_INVALID_ARGUMENT);
 	ASSERT_TRUE(checkBlock(block1, 10, 'U', user1, NULL));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1, 'U'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1, 'U'));
 	ASSERT_TRUE(checkBlock(block1, 10, 'U', user1, NULL));
 
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1, 'G'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1, 'G'));
 	ASSERT_TRUE(checkBlock(block1, 10, 'G', user1, NULL));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, block1, 'A'), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_TRUE(checkBlock(block1, 10, 'G', user1, NULL));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1, 'A'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1, 'A'));
 	ASSERT_TRUE(checkBlock(block1, 10, 'A', user1, NULL));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user3, block1, 'U'), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_TRUE(checkBlock(block1, 10, 'A', user1, NULL));
@@ -193,16 +193,16 @@ static bool memCacheUntrustTest(void) {
 	char * user4 = "radiohea";
 
 	// add users to system
-	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 100), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 100), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 100), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user4, 100), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 100));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 100));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 100));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user4, 100));
 
 	// trusting
-	ASSERT_EQUAL(memCacheTrust(memcache, user1, user2), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheTrust(memcache, user2, user1), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheTrust(memcache, user4, user4), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheTrust(memcache, user4, user4), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user2));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user2, user1));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user4, user4));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user4, user4));
 
 	// allocations
 	void *block1U1 = memCacheAllocate(memcache, user1, 23);
@@ -227,28 +227,28 @@ static bool memCacheUntrustTest(void) {
 
 
 	// untrusting
-	ASSERT_EQUAL(memCacheUntrust(memcache, user1, user2), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheUntrust(memcache, user4, user4), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheUntrust(memcache, user4, user4), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheUntrust(memcache, user1, user2));
+	ASSERT_SUCCESS(memCacheUntrust(memcache, user4, user4));
+	ASSERT_SUCCESS(memCacheUntrust(memcache, user4, user4));
 
 	// chmods
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1G1, 'G'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1G1, 'G'));
 	ASSERT_TRUE(checkBlock(block1G1, 42, 'G', user1, NULL));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block1A1, 'A'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block1A1, 'A'));
 	ASSERT_TRUE(checkBlock(block1A1, 13, 'A', user1, NULL));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, block2G1, 'G'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user2, block2G1, 'G'));
 	ASSERT_TRUE(checkBlock(block2G1, 42, 'G', user2, NULL));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, block2A1, 'A'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user2, block2A1, 'A'));
 	ASSERT_TRUE(checkBlock(block2A1, 13, 'A', user2, NULL));
 
 	// frees
 	ASSERT_EQUAL(memCacheFree(memcache, user1, block2U1), MEMCACHE_PERMISSION_DENIED);
-	ASSERT_EQUAL(memCacheFree(memcache, user1, block2G1), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheFree(memcache, user1, block2A1), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user1, block2G1));
+	ASSERT_SUCCESS(memCacheFree(memcache, user1, block2A1));
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1U1), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_EQUAL(memCacheFree(memcache, user2, block1G1), MEMCACHE_PERMISSION_DENIED);
-	ASSERT_EQUAL(memCacheFree(memcache, user2, block1A1), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheFree(memcache, user4, block4U1), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, block1A1));
+	ASSERT_SUCCESS(memCacheFree(memcache, user4, block4U1));
 
 	memCacheDestroy(memcache);
 
@@ -266,9 +266,9 @@ static bool memCacheAllocateTest(void) {
 	char * user4 = "nightwis";
 
 	// add users to system
-	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 256), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user2, 266), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user3, 300), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 256));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 266));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 300));
 
 	ASSERT_NULL(memCacheAllocate(NULL, NULL, 0));
 	ASSERT_NULL(memCacheAllocate(memcache, NULL, 0));
@@ -281,15 +281,15 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_NOT_NULL(block11);
 	ASSERT_TRUE(checkBlock(block11, 256, 'U', user1, NULL));
 	ASSERT_NULL(memCacheAllocate(memcache, user1, 1));
-	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user1, block11, 'A'), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block11, 'A'));
 	ASSERT_TRUE(checkBlock(block11, 256, 'A', user1, NULL));
-	ASSERT_EQUAL(memCacheFree(memcache, user2, block11), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, block11));
 	ASSERT_EQUAL(block11, memCacheGetFirstFreeBlock(memcache));
 	void *block21 = memCacheAllocate(memcache, user2, 256);
 	ASSERT_EQUAL(block11, block21);
 	ASSERT_TRUE(checkBlock(block21, 256, 'U', user2, NULL));
 	ASSERT_EQUAL(NULL, memCacheGetFirstFreeBlock(memcache));
-	ASSERT_EQUAL(memCacheFree(memcache, user2, block21), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, block21));
 	ASSERT_EQUAL(block21, memCacheGetFirstFreeBlock(memcache));
 	void *block22 = memCacheAllocate(memcache, user2, 256);
 	ASSERT_EQUAL(block21, block22);
@@ -297,7 +297,7 @@ static bool memCacheAllocateTest(void) {
 	ASSERT_EQUAL(NULL, memCacheGetFirstFreeBlock(memcache));
 	void *block31 = memCacheAllocate(memcache, user3, 257);
 	ASSERT_NOT_NULL(block31);
-	ASSERT_EQUAL(memCacheFree(memcache, user3, block31), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheFree(memcache, user3, block31));
 	ASSERT_EQUAL(NULL, memCacheGetFirstFreeBlock(memcache));
 
 	memCacheDestroy(memcache);
@@ -592,10 +592,10 @@ static bool memCacheFreeBlockForeachTest(void) {
 	// add to system
 	const int MAX_SIZE = 258;
 	const int MEMORY_LIMIT = (1+MAX_SIZE) * MAX_SIZE / 2;
-	ASSERT_EQUAL(memCacheAddUser(memcache, user1, MEMORY_LIMIT), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user2, MEMORY_LIMIT), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user3, MEMORY_LIMIT), MEMCACHE_SUCCESS);
-	ASSERT_EQUAL(memCacheAddUser(memcache, user4, MEMORY_LIMIT), MEMCACHE_SUCCESS);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, MEMORY_LIMIT));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, MEMORY_LIMIT));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, MEMORY_LIMIT));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user4, MEMORY_LIMIT));
 
 	// trusts
 	ASSERT_SUCCESS(memCacheTrust(memcache, user2, user4));
