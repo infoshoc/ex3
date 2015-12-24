@@ -47,40 +47,64 @@ typedef const int * const ConstMemCacheLimit;
 		}\
 	} while(false)
 
+/** function placeholder for block releasing (for adts) */
 static void memcacheDoNothing(MemCacheBlock block){}
 
+/** function for block copying (for adts) */
 static MemCacheBlock memcacheBlockCopy(MemCacheBlock block) {
 	return block;
 }
+
+/** function for block comparison (inside cache cell)
+ * returns 	-1 if first block if less then second
+ * 			0 if blocks are equal
+ * 			1 if first block is greater then second */
 static int memcacheBlocksCompare(MemCacheBlock block1, MemCacheBlock block2) {
 	// in order to escape overflow in difference
 	return block1 < block2 ? -1 : block1 == block2 ? 0 : 1;
 }
+
+/** function for block deallocation */
 static void memcacheFreeBlock(MemCacheBlock block) {
 	free((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
 }
+
+/** function that returns size of the block */
 static inline int memcacheBlockGetSize(MemCacheBlock block) {
 	return *(int*)((char*)block-2-MEMCACHE_USER_NAME_LENGTH-1-1-sizeof(int));
 }
+
+/** function that returns pointer to access mode */
 static inline char* memcacheBlockGetModePointer(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH-1;
 }
+
+/** function that returns block access mode */
 static inline MemCacheBlockMode memcacheBlockGetMode(MemCacheBlock block) {
 	return *memcacheBlockGetModePointer(block);
 }
+
 /** Function returns owner of block (NOT COPY) */
 static MemCacheUser memcacheBlockGetOwner(MemCacheBlock block) {
 	return (char*)block-2-MEMCACHE_USER_NAME_LENGTH;
 }
+
+/** function that computes key for allocated block cache */
 static int memcacheAllocatedBlockComputeKey(MemCacheBlock block) {
 	return (uintptr_t)block % MEMCACHE_ALLOCATED_BLOCK_MODULO;
 }
+
+/** function that computes key for free block cache according to block size */
 static int memcacheBlockSizeToCacheIndex(int size) {
 	return size-1;
 }
+
+/** function that computes key for free block cache */
 static int memcacheFreeBlockComputeKey(MemCacheBlock block) {
 	return memcacheBlockSizeToCacheIndex(memcacheBlockGetSize(block));
 }
+
+/** function that checks weather user is legal name */
 static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	if (user == NULL) {
 		return false;
@@ -98,6 +122,8 @@ static bool memcacheIsUserNameLegal(ConstMemCacheUser user) {
 	}
 	return true;
 }
+
+/** function that copies user (for adt's) */
 static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
 	assert(memcacheIsUserNameLegal(user));
 	MemCacheUser copy = malloc(strlen(user)+1);
@@ -109,14 +135,21 @@ static MemCacheUser memcacheUserCopy(ConstMemCacheUser user) {
 	return copy;
 
 }
+
+/** function that compares two users according to lexicographical order of names
+ * (for adt's) */
 static int memcacheUsersCompare(ConstMemCacheUser user1, ConstMemCacheUser user2) {
 	assert(memcacheIsUserNameLegal(user1));
 	assert(memcacheIsUserNameLegal(user2));
 	return strcmp(user1, user2);
 }
+
+/** function that deallocates user (for adt's) */
 static void memcacheUserFree(MemCacheUser user) {
 	free(user);
 }
+
+/** function that copies user memory limit (for adt's) */
 static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
 	MemCacheLimit copy;
 	MEMCACHE_ALLOCATE(int, copy, NULL);
@@ -124,9 +157,13 @@ static MemCacheLimit memcacheLimitCopy(ConstMemCacheLimit limit) {
 	*(int*)copy = *(int*)limit;
 	return copy;
 }
+
+/** function that releases user memory limit (for adt's) */
 static void memcacheLimitFree(MemCacheLimit limit) {
 	free(limit);
 }
+
+/** function that checks weather user is present in memcache */
 static bool memcacheIsUserExists(MemCache memcache, MemCacheUser user) {
 	assert(memcache != NULL);
 	if (!memcacheIsUserNameLegal(user)) {
@@ -139,6 +176,7 @@ static bool memcacheIsUserExists(MemCache memcache, MemCacheUser user) {
 	return mapContains(memcache->userMemoryLimit, user);
 }
 
+/** function that changes user memory limit */
 static void memcacheIncreaseUserLimit(MemCache memcache, MemCacheUser user, const int inc) {
 	assert(memcache != NULL);
 	assert(memcacheIsUserNameLegal(user));
@@ -148,6 +186,7 @@ static void memcacheIncreaseUserLimit(MemCache memcache, MemCacheUser user, cons
 	*(int*)oldLimit += inc;
 }
 
+/** function that returns user memory limit */
 static int memcacheGetUserLimit(MemCache memcache, MemCacheUser user) {
 	assert(memcache != NULL);
 	assert(memcacheIsUserNameLegal(user));
@@ -407,6 +446,8 @@ MemCacheResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 	return MEMCACHE_SUCCESS;
 }
 
+/** function that returns first memory block in cache
+ * the order is according to keys and inside the same key according to address */
 static void *memCacheGetFirstBlock(Cache cache) {
 	assert(cache != NULL);
 	CACHE_FOREACH(set, cache) {
@@ -417,6 +458,7 @@ static void *memCacheGetFirstBlock(Cache cache) {
 	}
 	return NULL;
 }
+/** function that returns current memory block in cache */
 static void *memCacheGetCurrentBlock(Cache cache) {
 	assert(cache != NULL);
 	Set cacheCurrentCell = cacheGetCurrent(cache);
@@ -425,6 +467,8 @@ static void *memCacheGetCurrentBlock(Cache cache) {
 	}
 	return setGetCurrent(cacheCurrentCell);
 }
+
+/** function that returns next memory block in cache */
 static void *memCacheGetNextBlock(Cache cache) {
 	assert(cache != NULL);
 	Set cacheCurrentCell = cacheGetCurrent(cache);
