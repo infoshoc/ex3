@@ -22,7 +22,7 @@ typedef enum MemCachResult_t {
 	MEMCACHE_INVALID_ARGUMENT,
 	MEMCACHE_ILLEGAL_USERNAME,
 	MEMCACHE_USERNAME_ALREADY_USED
-} MemCachResult;
+} MemCacheResult;
 
 /**
  * Type for defining memory management system
@@ -61,7 +61,7 @@ void memCacheDestroy(MemCache memcache);
  * 	MEMCACHE_USERNAME_ALREADY_USED - if username already used by other user
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory lack
  */
-MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit);
+MemCacheResult memCacheAddUser(MemCache memcache, char* username, int memory_limit);
 
 /**
  * Changes permission for block
@@ -82,7 +82,7 @@ MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limi
  * 	MEMCACHE_PERMISSION_DENIED - if username is not user who allocated block
  * 	MEMCACHE_INVALID_ARGUMENT - if mode is not legal
  */
-MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod);
+MemCacheResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod);
 
 /**
  * Adds username2 to username1's trusted group (if he is already there nothing is done)
@@ -97,7 +97,7 @@ MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, 
  * 	MEMCACHE_USER_NOT_FOUND - if user with name username1 or username2 doesn't exist
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2);
+MemCacheResult memCacheTrust(MemCache memcache, char* username1, char* username2);
 
 /**
  * Removes username2 from username1's trusted group (if he is not there nothing is done)
@@ -112,7 +112,7 @@ MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2)
  * 	MEMCACHE_USER_NOT_FOUND - if user with name username1 or username2 doesn't exist
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username2);
+MemCacheResult memCacheUntrust(MemCache memcache, char* username1, char* username2);
 
 /**
  * Allocates block of memory of size for username (if he didn't exceed  limit)
@@ -141,7 +141,7 @@ void* memCacheAllocate(MemCache memcache, char* username, int size);
  * 	MEMCACHE_PERMISSION_DENIED - username have no rights to release block
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory leak
  */
-MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr);
+MemCacheResult memCacheFree(MemCache memcache, char* username, void* ptr);
 
 /**
  * Sets the internal iterator (also called current element) to
@@ -230,7 +230,7 @@ void* memCacheGetCurrentFreeBlock(MemCache memcache);
  * 	MEMCACHE_SUCCESS - in case of success
  * 	MEMCACHE_NULL_ARGUMENT - if memcache is NULL
  */
-MemCachResult memCacheReset(MemCache memcache);
+MemCacheResult memCacheReset(MemCache memcache);
 
 /*!
 * Macro for iterating over a allocated blocks.

@@ -17,7 +17,7 @@
 #include "set.h"
 
 #define MEMCACHE_FREE_BLOCK_MAX_SIZE (256)
-#define MEMCACHE_ALLOCATED_BLOCK_MODULO (1<<10)
+#define MEMCACHE_ALLOCATED_BLOCK_MODULO (1024)
 #define MEMCACHE_USER_NAME_LENGTH (8)
 
 typedef struct MemCache_t {
@@ -207,7 +207,7 @@ void memCacheDestroy(MemCache memcache){
 	}
 
 	// release everything
-	MemCachResult memCachResult = memCacheReset(memcache);
+	MemCacheResult memCachResult = memCacheReset(memcache);
 	assert(memCachResult == MEMCACHE_SUCCESS);
 	//destroyers
 	cacheDestroy(memcache->freeBlocks);
@@ -217,7 +217,7 @@ void memCacheDestroy(MemCache memcache){
 	free(memcache);
 }
 
-MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
+MemCacheResult memCacheAddUser(MemCache memcache, char* username, int memory_limit) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -249,7 +249,7 @@ MemCachResult memCacheAddUser(MemCache memcache, char* username, int memory_limi
 	return MEMCACHE_SUCCESS;
 }
 
-MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod){
+MemCacheResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, char mod){
 	if (memcache==NULL){
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -269,7 +269,7 @@ MemCachResult memCacheSetBlockMod(MemCache memcache, char* username, void* ptr, 
 	return MEMCACHE_SUCCESS;
 }
 
-MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2) {
+MemCacheResult memCacheTrust(MemCache memcache, char* username1, char* username2) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -294,7 +294,7 @@ MemCachResult memCacheTrust(MemCache memcache, char* username1, char* username2)
 	return MEMCACHE_SUCCESS;
 }
 
-MemCachResult memCacheUntrust(MemCache memcache, char* username1, char* username2){
+MemCacheResult memCacheUntrust(MemCache memcache, char* username1, char* username2){
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -354,7 +354,7 @@ void* memCacheAllocate(MemCache memcache, char* username, int size){
 	return ptr;
 }
 
-MemCachResult memCacheFree(MemCache memcache, char* username, void* ptr) {
+MemCacheResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
@@ -504,7 +504,7 @@ static CacheResult memCacheClearBlockCache(Cache cache, int size) {
 	return cacheClear(cache);
 }
 
-MemCachResult memCacheReset(MemCache memcache) {
+MemCacheResult memCacheReset(MemCache memcache) {
 	if (memcache == NULL) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}

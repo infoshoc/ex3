@@ -409,34 +409,72 @@ static bool memCacheAllocatedBlockForeachTest() {
 	char * user = "oomph123";
 
 	// add to system
-	ASSERT_EQUAL(memCacheAddUser(memcache, user, 393354), MEMCACHE_SUCCESS);
+	const int MODULO = 1024;
+	const int MAX_SIZE = 1024 * 2;
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user, 6*(1+MAX_SIZE)*MAX_SIZE/2));
 
 	// allocations
-#define MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH 9
-	const int SIZE2ALLOCATE[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH] =
-		{1, 1, 1, 23, 23, 23, (1<<10), (1<<10), (1<<10)};
-	void * blocks[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH];
-	int visitedTimes[MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH] = {0};
+	void *allocatedBlocks[3][MAX_SIZE], *freeBlocks[3][MAX_SIZE];
+	int visited[3][MAX_SIZE];
+	for (int size = 1; size <= MAX_SIZE; ++size) {
+		for (int i = 0; i < 3; ++i) {
+			visited[i][size-1] = 0;
+		}
+		ASSERT_NOT_NULL(allocatedBlocks[0][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(allocatedBlocks[0][size-1], size, 'U', user, NULL));
+		ASSERT_NOT_NULL(freeBlocks[0][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(freeBlocks[0][size-1], size, 'U', user, NULL));
 
-	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
-		blocks[i] = memCacheAllocate(memcache, user, SIZE2ALLOCATE[i]);
-		ASSERT_NOT_NULL(blocks[i]);
+		ASSERT_NOT_NULL(allocatedBlocks[1][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(allocatedBlocks[1][size-1], size, 'U', user, NULL));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, allocatedBlocks[1][size-1], 'G'));
+		ASSERT_TRUE(checkBlock(allocatedBlocks[1][size-1], size, 'G', user, NULL));
+		ASSERT_NOT_NULL(freeBlocks[1][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(freeBlocks[1][size-1], size, 'U', user, NULL));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, freeBlocks[1][size-1], 'G'));
+		ASSERT_TRUE(checkBlock(freeBlocks[1][size-1], size, 'G', user, NULL));
+
+		ASSERT_NOT_NULL(allocatedBlocks[2][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(allocatedBlocks[2][size-1], size, 'U', user, NULL));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, allocatedBlocks[2][size-1], 'A'));
+		ASSERT_TRUE(checkBlock(allocatedBlocks[2][size-1], size, 'A', user, NULL));
+		ASSERT_NOT_NULL(freeBlocks[2][size-1] = memCacheAllocate(memcache, user, size));
+		ASSERT_TRUE(checkBlock(freeBlocks[2][size-1], size, 'U', user, NULL));
+		ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user, freeBlocks[2][size-1], 'A'));
+		ASSERT_TRUE(checkBlock(freeBlocks[2][size-1], size, 'A', user, NULL));
 	}
 
-	int iterations = 0;
-	MEMCACHE_ALLOCATED_FOREACH(block, memcache) {
-		++iterations;
-		for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
-			if (blocks[i] == block) {
-				++visitedTimes[i];
-			}
+
+	for (int size = 1; size <= MAX_SIZE; ++size) {
+		for (int i = 0; i < 3; ++i) {
+			ASSERT_SUCCESS(memCacheFree(memcache, user, freeBlocks[i][size-1]));
 		}
 	}
 
-	ASSERT_EQUAL(iterations, MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH);
-	for (int i = 0; i < MEMCACHE_ALLOCATED_BLOCK_FOREACH_TEST_SIZE2ALLOCATE_LENGTH; ++i) {
-		ASSERT_EQUAL(visitedTimes[i], 1);
+	int currentReminder = 0;
+	MEMCACHE_ALLOCATED_FOREACH(block, memcache) {
+		ASSERT_TRUE((uintptr_t)block % MODULO >= currentReminder);
+		currentReminder = (uintptr_t)block % MODULO;
+		bool found = false;
+		for (int mod = 0; mod < 3 && !found; ++mod) {
+			for (int size = 1; size <= MAX_SIZE && !found; ++size) {
+				if (allocatedBlocks[mod][size-1] == block) {
+					++visited[mod][size-1];
+					found = true;
+				}
+			}
+		}
+		ASSERT_TRUE(found);
 	}
+	for (int size = 1; size <= MAX_SIZE; ++size) {
+		for (int i = 0; i < 3; ++i) {
+			ASSERT_EQUAL(visited[i][size-1], 1);
+		}
+	}
+
+	ASSERT_NULL(memCacheGetCurrentAllocatedBlock(memcache));
+	ASSERT_NULL(memCacheGetNextAllocatedBlock(memcache));
+
 
 	memCacheDestroy(memcache);
 
@@ -540,6 +578,11 @@ static bool memCacheFreeBlockForeachTest(void) {
 	MemCache memcache = memCacheCreate();
 	ASSERT_NOT_NULL(memcache);
 
+	// empty stable
+	ASSERT_NULL(memCacheGetCurrentFreeBlock(NULL));
+	ASSERT_NULL(memCacheGetFirstFreeBlock(NULL));
+	ASSERT_NULL(memCacheGetNextFreeBlock(NULL));
+
 	//users
 	char *user1 = "accept12";
 	char *user2 = "offsprin";
@@ -593,7 +636,7 @@ static bool memCacheFreeBlockForeachTest(void) {
 	ASSERT_SUCCESS(memCacheFree(memcache, user4, user2Blocks[257-1]));
 	ASSERT_SUCCESS(memCacheFree(memcache, user4, user3Blocks[257-1]));
 
-	int currentSize = 1, blocks_of_current_size = 0;
+	int currentSize = 1, blocksOfCurrentSize = 0;
 	MEMCACHE_FREE_FOREACH(block, memcache) {
 		for (int i = 0; i < 3 * 256; ++i) {
 			if (freedBlocks[i] == block) {
@@ -602,12 +645,14 @@ static bool memCacheFreeBlockForeachTest(void) {
 				ASSERT_EQUAL(size, currentSize);
 			}
 		}
-		if (++blocks_of_current_size == 3) {
+		if (++blocksOfCurrentSize == 3) {
 			++currentSize;
-			blocks_of_current_size = 0;
+			blocksOfCurrentSize = 0;
 		}
-
 	}
+
+	ASSERT_EQUAL(currentSize, 257);
+	ASSERT_EQUAL(blocksOfCurrentSize, 0);
 
 	for (int i = 0; i < 3 * 256; ++i) {
 		ASSERT_EQUAL(visited[i], 1);
