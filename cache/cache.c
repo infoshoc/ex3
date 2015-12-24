@@ -135,7 +135,9 @@ bool cacheIsIn(Cache cache, CacheElement element) {
 }
 
 Set cacheGetFirst(Cache cache) {
-	assert(cache != NULL);
+	if (cache == NULL) {
+		return NULL;
+	}
 	cache->iteratorIndex = 0;
 	return cache->container[cache->iteratorIndex];
 }

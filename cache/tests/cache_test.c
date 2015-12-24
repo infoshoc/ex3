@@ -138,7 +138,7 @@ static bool testCachePush() {
 static bool testCacheFreeElement(void) {
 	Cache cache = cacheCreate(255, freeString, copyString, compareStrings, getFirstLetter);
 
-	char *outOfRange = { (char)255, '\0' };
+	char outOfRange[2] = { (char)255, '\0' };
 	char *notInCache = "Rock";
 	char *doubled = "Louna";
 	char * elements[] = {
@@ -157,6 +157,7 @@ static bool testCacheFreeElement(void) {
 	ASSERT_TEST(cachePush(cache, doubled) == CACHE_ITEM_ALREADY_EXISTS);
 
 	ASSERT_TEST(cacheFreeElement(cache, outOfRange) == CACHE_ITEM_DOES_NOT_EXIST);
+	ASSERT_TEST(cacheFreeElement(cache, notInCache) == CACHE_ITEM_DOES_NOT_EXIST);
 	for (int i = ELEMENTS_SIZE-1; i >= 0; --i) {
 		ASSERT_TEST(cacheFreeElement(cache, elements[i]) == CACHE_SUCCESS);
 	}
@@ -280,7 +281,12 @@ static bool testCacheForeach() {
 }
 
 int main() {
+	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
+
+	RUN_TEST(testCacheCreate);
 	RUN_TEST(testCacheExample);
+	RUN_TEST(testCacheFreeElement);
 	RUN_TEST(testCachePush);
 	RUN_TEST(testCacheExtractElementByKey);
 	RUN_TEST(testCacheForeach);
