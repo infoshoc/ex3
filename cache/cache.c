@@ -156,7 +156,7 @@ Set cacheGetNext(Cache cache) {
 }
 
 Set cacheGetCurrent(Cache cache) {
-	if (cache == NULL){
+	if (cache == NULL || cache->iteratorIndex == CACHE_INVALID_ITERATOR_INDEX){
 		return NULL;
 	}
 	return cache->container[cache->iteratorIndex];

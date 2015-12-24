@@ -205,6 +205,11 @@ static bool testCacheForeach() {
 		ASSERT_TEST(cacheIsIn(cache, &i));
 	}
 
+	ASSERT_TEST(cacheGetCurrent(NULL) == NULL);
+	ASSERT_TEST(cacheGetFirst(NULL) == NULL);
+	ASSERT_TEST(cacheGetNext(NULL) == NULL);
+	ASSERT_TEST(cacheGetCurrent(cache) == NULL);
+
 	CACHE_FOREACH(set, cache) {
 		SET_FOREACH(int*, it, set) {
 			++counted[INT(it)];
@@ -215,6 +220,8 @@ static bool testCacheForeach() {
 			ASSERT_TEST(cacheIsIn(cache, &i));
 		}
 	}
+	ASSERT_TEST(cacheGetNext(cache) == NULL);
+	ASSERT_TEST(cacheGetCurrent(cache) == NULL);
 
 
 	for (int i = 0; i < TEST_CACHE_FOREACH_ELEMENTS; ++i) {
