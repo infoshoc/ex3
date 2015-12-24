@@ -15,6 +15,7 @@ static MySetElement copyString(MySetElement str) {
 	return strcpy(copy, str);
 }
 
+
 /** Function to be used by the set for freeing elements */
 static void freeString(MySetElement str) {
 	free(str);
@@ -544,6 +545,55 @@ static bool testMySetExtract() {
 	return true;
 }
 
+static bool testMySetFilter() {
+	MySet set = mySetCreate(copyInt, freeInt, compareInt);
+	const int VALUES_NUMBER = 7;
+	int* values[VALUES_NUMBER];
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		values[i] = (int*)malloc(sizeof(int));
+		if (values[i] == NULL) {
+			while (i) {
+				freeInt(values[--i]);
+			}
+		}
+		*values[i] = i;
+	}
+	ASSERT_TEST(mySetAdd(set, values[0]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[3]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[4]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[1]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[5]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[2]) == MY_SET_SUCCESS);
+	ASSERT_TEST(mySetAdd(set, values[6]) == MY_SET_SUCCESS);
+
+	ASSERT_TEST(mySetFilter(NULL, oddIntFilter) == NULL);
+	//ASSERT_TEST(mySetFilter(NULL, false) == NULL);
+	ASSERT_TEST(mySetFilter(set, NULL) == NULL);
+
+	MySet setNewTrue = mySetCreate(copyInt, freeInt, compareInt);
+	MySet setNewFalse = mySetCreate(copyInt, freeInt, compareInt);
+	MySetResult sorting;
+	for (int i = 0; i < VALUES_NUMBER; ++i){
+		if (oddIntFilter (values[i]) == true){
+		sorting = mySetAdd(setNewTrue, values[i]);
+		}
+	//	else {
+			//MySetResult sorting = mySetAdd(setNewFalse, values[i]);
+	//	}
+	}
+
+	ASSERT_TEST(mySetFilter(set, oddIntFilter) == setNewTrue);
+	//ASSERT_TEST(mySetFilter(set, false) == setNewFalse);
+
+	for (int i = 0; i < VALUES_NUMBER; ++i) {
+		freeInt(values[i]);
+	}
+	mySetDestroy(setNewTrue);
+	mySetDestroy(setNewFalse);
+	mySetDestroy(set);
+	return true;
+}
+
 int main() {
 	RUN_TEST(testMySetExample);
 	RUN_TEST(testMySetCopy);
@@ -557,7 +607,7 @@ int main() {
 	RUN_TEST(testMySetDestroy);
 	RUN_TEST(testMySetIsIn);
 	RUN_TEST(testMySetExtract);
-	//RUN_TEST(testMySetFilter);
+	RUN_TEST(testMySetFilter);
 	return 0;
 }
 
