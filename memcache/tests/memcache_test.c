@@ -1,12 +1,6 @@
-/*
- * memcache_test.c
- *
- *  Created on: Nov 26, 2015
- *      Author: tamer.mour
- */
- 
 #include "test_utilities.h"
 #include <stdlib.h>
+#include <ctype.h>
 #include <inttypes.h>
 #include <string.h>
 #include "../memcache.h"
@@ -71,6 +65,13 @@ bool memCacheExampleTest() {
   return true;
 }
 
+static bool memCacheCreateTest(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+	memCacheDestroy(memcache);
+	return true;
+}
+
 static bool memCacheDestroyTest(void) {
 	// is NULL stable
 	memCacheDestroy(NULL);
@@ -121,6 +122,39 @@ static bool memCacheDestroyTest(void) {
 
 	memCacheDestroy(memcache);
 
+	return true;
+}
+
+static bool memCacheAddUserTest(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	char *user1 = "AxelRudi";
+	char *shortUser = "AxelRud";
+	char *longUser = "AxelRudiP";
+	char *emptyUser = "";
+
+	ASSERT_EQUAL(memCacheAddUser(NULL, user1, 23), MEMCACHE_NULL_ARGUMENT);
+	ASSERT_EQUAL(memCacheAddUser(NULL, user1, -1), MEMCACHE_NULL_ARGUMENT);
+	ASSERT_EQUAL(memCacheAddUser(memcache, NULL, 23), MEMCACHE_ILLEGAL_USERNAME);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user1, 0), MEMCACHE_INVALID_ARGUMENT);
+	ASSERT_EQUAL(memCacheAddUser(memcache, user1, -1), MEMCACHE_INVALID_ARGUMENT);
+	ASSERT_EQUAL(memCacheAddUser(memcache, shortUser, -1), MEMCACHE_INVALID_ARGUMENT);
+	ASSERT_EQUAL(memCacheAddUser(memcache, shortUser, 23), MEMCACHE_ILLEGAL_USERNAME);
+	ASSERT_EQUAL(memCacheAddUser(memcache, longUser, 23), MEMCACHE_ILLEGAL_USERNAME);
+	ASSERT_EQUAL(memCacheAddUser(memcache, emptyUser, 23), MEMCACHE_ILLEGAL_USERNAME);
+	for (int i = 0; i < 8; ++i) {
+		for (int c = 0; c < 256; ++c) {
+			if (!isalnum(c)) {
+				char illegalName[9];
+				strcpy(illegalName, "legal123");
+				illegalName[i] = c;
+				ASSERT_EQUAL(memCacheAddUser(memcache, illegalName, 23), MEMCACHE_ILLEGAL_USERNAME);
+			}
+		}
+	}
+
+	memCacheDestroy(memcache);
 	return true;
 }
 
@@ -177,6 +211,62 @@ static bool memCacheSetBlockModTest(void) {
 	ASSERT_TRUE(checkBlock(block1, 10, 'A', user1, NULL));
 	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user3, block1, 'U'), MEMCACHE_PERMISSION_DENIED);
 	ASSERT_TRUE(checkBlock(block1, 10, 'A', user1, NULL));
+
+	memCacheDestroy(memcache);
+	return true;
+}
+
+static bool memCacheTrustTest(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	char *user1 = "scorpion";
+	char *user2 = "tarakany";
+	char *user3 = "lumen000";
+	char *hacker = "rammstei";
+
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 4223));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 4323));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user3, 4323));
+
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user2));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user1));
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user3));
+	ASSERT_SUCCESS(memCacheUntrust(memcache, user1, user3));
+	ASSERT_EQUAL(memCacheTrust(memcache, hacker, user2), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_EQUAL(memCacheTrust(memcache, user1, hacker), MEMCACHE_USER_NOT_FOUND);
+
+	void *blockU = memCacheAllocate(memcache, user1, 42);
+	ASSERT_TRUE(checkBlock(blockU, 42, 'U', user1, NULL));
+
+	void *blockG = memCacheAllocate(memcache, user1, 23);
+	ASSERT_TRUE(checkBlock(blockG, 23, 'U', user1, NULL));
+	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, blockG, 'G'), MEMCACHE_PERMISSION_DENIED);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, blockG, 'G'));
+	ASSERT_TRUE(checkBlock(blockG, 23, 'G', user1, NULL));
+
+	void *blockA = memCacheAllocate(memcache, user1, 23);
+	ASSERT_TRUE(checkBlock(blockA, 23, 'U', user1, NULL));
+	ASSERT_EQUAL(memCacheSetBlockMod(memcache, user2, blockA, 'A'), MEMCACHE_PERMISSION_DENIED);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, blockA, 'A'));
+	ASSERT_TRUE(checkBlock(blockA, 23, 'A', user1, NULL));
+
+	ASSERT_EQUAL(memCacheFree(memcache, hacker, blockU), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_EQUAL(memCacheFree(memcache, hacker, blockG), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_EQUAL(memCacheFree(memcache, hacker, blockA), MEMCACHE_USER_NOT_FOUND);
+
+	ASSERT_EQUAL(memCacheFree(memcache, user3, blockU), MEMCACHE_PERMISSION_DENIED);
+	ASSERT_EQUAL(memCacheFree(memcache, user3, blockG), MEMCACHE_PERMISSION_DENIED);
+	ASSERT_SUCCESS(memCacheFree(memcache, user3, blockA));
+
+
+	ASSERT_EQUAL(memCacheFree(memcache, user2, blockU), MEMCACHE_PERMISSION_DENIED);
+	ASSERT_SUCCESS(memCacheFree(memcache, user2, blockG));
+	ASSERT_EQUAL(memCacheFree(memcache, user2, blockA), MEMCACHE_BLOCK_NOT_ALLOCATED);
+
+	ASSERT_SUCCESS(memCacheFree(memcache, user1, blockU));
+	ASSERT_EQUAL(memCacheFree(memcache, hacker, blockG), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_EQUAL(memCacheFree(memcache, hacker, blockA), MEMCACHE_USER_NOT_FOUND);
 
 	memCacheDestroy(memcache);
 	return true;
@@ -662,13 +752,51 @@ static bool memCacheFreeBlockForeachTest(void) {
 	return true;
 }
 
+static bool memCacheResetTest(void) {
+	MemCache memcache = memCacheCreate();
+	ASSERT_NOT_NULL(memcache);
+
+	char *user1 = "skillet1";
+	char *user2 = "forsaken";
+
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 42));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 42));
+
+	ASSERT_SUCCESS(memCacheTrust(memcache, user1, user2));
+
+	void *block1 = memCacheAllocate(memcache, user1, 17);
+	ASSERT_TRUE(checkBlock(block1, 17, 'U', user1, NULL));
+	void *block2 = memCacheAllocate(memcache, user1, 17);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block2, 'G'));
+	ASSERT_TRUE(checkBlock(block2, 17, 'G', user1, NULL));
+
+	ASSERT_EQUAL(memCacheReset(NULL), MEMCACHE_NULL_ARGUMENT);
+	ASSERT_SUCCESS(memCacheReset(memcache));
+
+	ASSERT_NULL(memCacheAllocate(memcache, user1, 1));
+	ASSERT_EQUAL(memCacheFree(memcache, user1, block1), MEMCACHE_USER_NOT_FOUND);
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user1, 42));
+	ASSERT_SUCCESS(memCacheAddUser(memcache, user2, 42));
+	ASSERT_EQUAL(memCacheFree(memcache, user1, block1), MEMCACHE_BLOCK_NOT_ALLOCATED);
+	block2 = memCacheAllocate(memcache, user1, 42);
+	ASSERT_SUCCESS(memCacheSetBlockMod(memcache, user1, block2, 'G'));
+	ASSERT_TRUE(checkBlock(block2, 42, 'G', user1, NULL));
+	ASSERT_EQUAL(memCacheFree(memcache, user2, block2), MEMCACHE_PERMISSION_DENIED);
+
+	memCacheDestroy(memcache);
+	return true;
+}
+
 int main() {
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 
 	RUN_TEST(memCacheExampleTest);
+	RUN_TEST(memCacheCreateTest);
 	RUN_TEST(memCacheDestroyTest);
+	RUN_TEST(memCacheAddUserTest);
 	RUN_TEST(memCacheSetBlockModTest);
+	RUN_TEST(memCacheTrustTest);
 	RUN_TEST(memCacheUntrustTest);
 	RUN_TEST(memCacheAllocateTest);
 	RUN_TEST(memCacheFreeTest);
@@ -676,6 +804,7 @@ int main() {
 	RUN_TEST(memCacheFreeTest3);
 	RUN_TEST(memCacheAllocatedBlockForeachTest);
 	RUN_TEST(memCacheFreeBlockForeachTest);
+	RUN_TEST(memCacheResetTest);
 
 	return 0;
 }

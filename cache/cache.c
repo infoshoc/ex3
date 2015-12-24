@@ -170,8 +170,7 @@ CacheResult cacheClear(Cache cache) {
 	}
 
 	CACHE_CONTAINER_FOREACH(i, cache) {
-		SetResult setClearResult = setClear(cache->container[i]);
-		assert(setClearResult == SET_SUCCESS);
+		setClear(cache->container[i]);
 	}
 
 	return CACHE_SUCCESS;

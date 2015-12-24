@@ -57,7 +57,8 @@ void memCacheDestroy(MemCache memcache);
  * 	MEMCACHE_SUCCESS - in case of success
  * 	MEMCACHE_NULL_ARGUMENT - if memcache is NULL
  * 	MEMCACHE_INVALID_ARGUMENT - if memory_limit is not positive
- * 	MEMCACHE_ILLEGAL_USERNAME - if username is not legal
+ * 	MEMCACHE_ILLEGAL_USERNAME - if username is not legal (legal is consists of 8 
+ *	characters which are big or small english letters or digits)
  * 	MEMCACHE_USERNAME_ALREADY_USED - if username already used by other user
  * 	MEMCACHE_OUT_OF_MEMORY - in case of memory lack
  */

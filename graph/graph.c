@@ -141,8 +141,7 @@ GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex){
 	}
 
 	// remove vertex
-	SetResult removing = setRemove(graph->vertices, vertex);
-	assert(removing == SET_SUCCESS);
+	setRemove(graph->vertices, vertex);
 
 	// remove all incident edges
 	for (bool found = true; found; ) {
@@ -150,8 +149,7 @@ GraphResult graphRemoveVertex(Graph graph, GraphVertex vertex){
 		SET_FOREACH(GraphEdge, edge, graph->edges) {
 			if (graph->compareVertex(edge->from, vertex) == 0 ||
 					graph->compareVertex(edge->to, vertex) == 0 ) {
-				SetResult removeResult = setRemove(graph->edges, edge);
-				assert(removeResult == SET_SUCCESS);
+				setRemove(graph->edges, edge);
 				found = true;
 				break;
 			}
@@ -203,8 +201,7 @@ GraphResult graphRemoveDirectedEdge(Graph graph, GraphVertex from, GraphVertex t
 	if (edge == NULL) {
 		return GRAPH_OUT_OF_MEMORY;
 	}
-	SetResult setRemoveResult = setRemove(graph->edges, edge);
-	assert(setRemoveResult == SET_SUCCESS);
+	setRemove(graph->edges, edge);
 	graphEdgeFree(edge);
 	return GRAPH_SUCCESS;
 }
@@ -225,11 +222,8 @@ GraphResult graphClear(Graph graph) {
 		return GRAPH_NULL_ARGUMENT;
 	}
 
-	SetResult edgesClearResult = setClear(graph->edges);
-	SetResult verticesClearResult = setClear(graph->vertices);
-
-	assert(edgesClearResult == SET_SUCCESS &&
-			verticesClearResult == SET_SUCCESS);
+	setClear(graph->edges);
+	setClear(graph->vertices);
 
 	return GRAPH_SUCCESS;
 }

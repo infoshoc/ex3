@@ -223,8 +223,7 @@ MySetResult mySetClear(MySet set){
 	}
 	MySetElement clearElement = mySetGetFirst(set);
 	while (clearElement != NULL){
-		MySetResult clearing = mySetRemove(set, clearElement);
-		assert(clearing == MY_SET_SUCCESS);
+		mySetRemove(set, clearElement);
 		clearElement = mySetGetFirst(set);
 	}
 	return MY_SET_SUCCESS;

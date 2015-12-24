@@ -246,8 +246,7 @@ void memCacheDestroy(MemCache memcache){
 	}
 
 	// release everything
-	MemCacheResult memCachResult = memCacheReset(memcache);
-	assert(memCachResult == MEMCACHE_SUCCESS);
+	memCacheReset(memcache);
 	//destroyers
 	cacheDestroy(memcache->freeBlocks);
 	cacheDestroy(memcache->allocatedBlocks);
@@ -279,8 +278,7 @@ MemCacheResult memCacheAddUser(MemCache memcache, char* username, int memory_lim
 	MapResult mapPutResult = mapPut(memcache->userMemoryLimit, username, &memory_limit);
 	if (mapPutResult == MAP_OUT_OF_MEMORY) {
 		// consistency
-		GraphResult graphRemoveVertexResult = graphRemoveVertex(memcache->userRelations, username);
-		assert(graphRemoveVertexResult == GRAPH_SUCCESS);
+		graphRemoveVertex(memcache->userRelations, username);
 		return MEMCACHE_OUT_OF_MEMORY;
 	}
 	assert(mapPutResult == MAP_SUCCESS);
@@ -440,8 +438,7 @@ MemCacheResult memCacheFree(MemCache memcache, char* username, void* ptr) {
 		assert(cachePushResult == CACHE_SUCCESS);
 	}
 	//remove WITHOUT releasing
-	CacheResult cacheFreeResult = cacheFreeElement(memcache->allocatedBlocks, ptr);
-	assert(cacheFreeResult == CACHE_SUCCESS);
+	cacheFreeElement(memcache->allocatedBlocks, ptr);
 
 	return MEMCACHE_SUCCESS;
 }
@@ -553,18 +550,12 @@ MemCacheResult memCacheReset(MemCache memcache) {
 		return MEMCACHE_NULL_ARGUMENT;
 	}
 
-	GraphResult graphClearResult = graphClear(memcache->userRelations);
-	assert(graphClearResult == GRAPH_SUCCESS);
-	MapResult mapClearResult = mapClear(memcache->userMemoryLimit);
-	assert(mapClearResult == MAP_SUCCESS);
+	graphClear(memcache->userRelations);
+	mapClear(memcache->userMemoryLimit);
 
 	// remove and release all blocks
-	CacheResult allocatedCacheClear =
-		memCacheClearBlockCache(memcache->allocatedBlocks, MEMCACHE_ALLOCATED_BLOCK_MODULO);
-	assert(allocatedCacheClear == CACHE_SUCCESS);
-	CacheResult freeCacheClear =
-			memCacheClearBlockCache(memcache->freeBlocks, MEMCACHE_FREE_BLOCK_MAX_SIZE);
-	assert(freeCacheClear == CACHE_SUCCESS);
+	memCacheClearBlockCache(memcache->allocatedBlocks, MEMCACHE_ALLOCATED_BLOCK_MODULO);
+	memCacheClearBlockCache(memcache->freeBlocks, MEMCACHE_FREE_BLOCK_MAX_SIZE);
 
 	return MEMCACHE_SUCCESS;
 }
