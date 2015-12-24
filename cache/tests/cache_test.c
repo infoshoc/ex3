@@ -74,6 +74,18 @@ bool testCacheExample() {
   return true;
 }
 
+static bool testCacheCreate(void) {
+	ASSERT_TEST(!cacheCreate(0, freeString, copyString, compareStrings, getFirstLetter));
+	ASSERT_TEST(!cacheCreate(256, NULL, copyString, compareStrings, getFirstLetter));
+	ASSERT_TEST(!cacheCreate(256, freeString, NULL, compareStrings, getFirstLetter));
+	ASSERT_TEST(!cacheCreate(256, freeString, copyString, NULL, getFirstLetter));
+	ASSERT_TEST(!cacheCreate(256, freeString, copyString, compareStrings, NULL));
+
+	Cache cache = cacheCreate(1, freeString, copyString, compareStrings, getFirstLetter);
+	ASSERT_TEST(cache != NULL);
+	cacheDestroy(cache);
+}
+
 static bool testCachePush() {
 	//strings
 	char * toFirstCell = "";
