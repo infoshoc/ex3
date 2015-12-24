@@ -84,6 +84,7 @@ static bool testCacheCreate(void) {
 	Cache cache = cacheCreate(1, freeString, copyString, compareStrings, getFirstLetter);
 	ASSERT_TEST(cache != NULL);
 	cacheDestroy(cache);
+	return true;
 }
 
 static bool testCachePush() {
@@ -131,6 +132,39 @@ static bool testCachePush() {
 	freeString(toLastCellCopy);
 	cacheDestroy(cache);
 
+	return true;
+}
+
+static bool testCacheFreeElement(void) {
+	Cache cache = cacheCreate(255, freeString, copyString, compareStrings, getFirstLetter);
+
+	char *outOfRange = { (char)255, '\0' };
+	char *notInCache = "Rock";
+	char *doubled = "Louna";
+	char * elements[] = {
+			"Ramones",
+			"Lumen",
+			"Louna",
+			"Linkin park"
+			"Arch Enemy"
+	};
+	const int ELEMENTS_SIZE = sizeof(elements) / sizeof(*elements);
+
+	for (int i = 0; i < ELEMENTS_SIZE; ++i) {
+		ASSERT_TEST(cachePush(cache, elements[i]) == CACHE_SUCCESS);
+	}
+	ASSERT_TEST(cachePush(cache, outOfRange) == CACHE_OUT_OF_RANGE);
+	ASSERT_TEST(cachePush(cache, doubled) == CACHE_ITEM_ALREADY_EXISTS);
+
+	ASSERT_TEST(cacheFreeElement(cache, outOfRange) == CACHE_ITEM_DOES_NOT_EXIST);
+	for (int i = ELEMENTS_SIZE-1; i >= 0; --i) {
+		ASSERT_TEST(cacheFreeElement(cache, elements[i]) == CACHE_SUCCESS);
+	}
+	ASSERT_TEST(cacheFreeElement(cache, doubled) == CACHE_ITEM_DOES_NOT_EXIST);
+	ASSERT_TEST(cacheFreeElement(NULL, doubled) == CACHE_NULL_ARGUMENT);
+	ASSERT_TEST(cacheFreeElement(NULL, NULL) == CACHE_NULL_ARGUMENT);
+
+	cacheDestroy(cache);
 	return true;
 }
 
